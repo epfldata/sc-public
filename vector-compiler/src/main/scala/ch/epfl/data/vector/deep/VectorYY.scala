@@ -14,7 +14,7 @@ trait VectorYY extends VectorDSL with BaseYinYang with FullyUnstaged with Stager
 
   override def stage[T](): T = {
     lazy val res = main().asInstanceOf[Rep[T]]
-    new compiler.VectorCompiler(this).compile(res)
+    new compiler.VectorCompiler(this).compile(res, "GeneratedVectorApp")(null)
     res.asInstanceOf[T]
   }
 }

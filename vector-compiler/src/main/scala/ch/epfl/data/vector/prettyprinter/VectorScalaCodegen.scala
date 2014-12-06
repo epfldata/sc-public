@@ -16,6 +16,6 @@ import ch.epfl.data.vector.shallow._
 
 """
 
-  override def getTraitSignature(): Document = s"""object GeneratedVectorApp extends LegoRunner {
+  override def getTraitSignature(): Document = s"""object GeneratedVectorApp {
   def main(args: Array[String]): Unit = """
 }
