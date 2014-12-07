@@ -6,7 +6,7 @@ import com.typesafe.sbt.SbtScalariform
 import com.typesafe.sbt.SbtScalariform.ScalariformKeys
 import ch.epfl.data.purgatory.plugin.PurgatoryPlugin._
 
-object LegoBuild extends Build {
+object VectorBuild extends Build {
 
   lazy val formatSettings = SbtScalariform.scalariformSettings ++ Seq(
     ScalariformKeys.preferences in Compile := formattingPreferences,
