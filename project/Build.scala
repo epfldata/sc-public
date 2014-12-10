@@ -30,7 +30,16 @@ object VectorBuild extends Build {
     .setPreference(AlignSingleLineCaseStatements, true)
   }
 
-  lazy val vector             = Project(id = "root", base = file("."), settings = defaults) aggregate (vector_interpreter)
-  lazy val vector_interpreter = Project(id = "vector-interpreter", base = file("vector-interpreter"), settings = defaults ++ Seq(
+  def purgatorySettings = Seq(
+    outputFolder := "vector-compiler/src/main/scala/ch/epfl/data/vector/deep",
+    inputPackage := "ch.epfl.data.vector.shallow",
+    outputPackage := "ch.epfl.data.vector.deep") ++ generatorSettings
+
+  lazy val vector             = Project(id = "root", base = file("."), settings = defaults) aggregate (vector_interpreter, vector_compiler)
+  lazy val vector_interpreter = Project(id = "vector-interpreter", base = file("vector-interpreter"), settings = defaults ++ purgatorySettings ++ Seq(
     name := "vector-interpreter"))
+  lazy val vector_compiler    = Project(id = "vector-compiler", base = file("vector-compiler"), settings = defaults ++ Seq(name := "vector-compiler",
+      libraryDependencies += "ch.epfl.data" % "pardis-compiler_2.11" % "0.1-SNAPSHOT",
+      libraryDependencies += "ch.epfl.lamp" % "scala-yinyang_2.11" % "0.2.0-SNAPSHOT",
+      scalacOptions in Test ++= Seq("-optimize"))) dependsOn(vector_interpreter)
 }
