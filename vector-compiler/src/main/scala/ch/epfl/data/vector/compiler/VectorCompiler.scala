@@ -10,5 +10,7 @@ import deep._
 import prettyprinter._
 
 class VectorCompiler(val DSL: VectorDSL) extends Compiler[VectorDSL] {
+  pipeline += DCE
+
   val codeGenerator = new VectorScalaGenerator
 }
