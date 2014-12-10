@@ -10,7 +10,7 @@ import pardis.deep._
 import pardis.deep.scalalib._
 import pardis.deep.scalalib.collection._
 import pardis.deep.scalalib.io._
-trait VectorOps extends Base {
+trait VectorOps extends Base with RichIntOps with SeqOps with IntOps with IndexedSeqOps {
   // Type representation
   case object VectorType extends TypeRep[Vector] {
     def rebuild(newArguments: TypeRep[_]*): TypeRep[_] = VectorType
@@ -23,6 +23,7 @@ trait VectorOps extends Base {
   implicit class VectorRep(self: Rep[Vector]) {
     def +(v2: Rep[Vector]): Rep[Vector] = vector$plus(self, v2)
     def *(v2: Rep[Vector]): Rep[Int] = vector$times(self, v2)
+    def sameAs(v2: Rep[Vector]): Rep[Boolean] = vectorSameAs(self, v2)
     def data: Rep[Seq[Int]] = vector_Field_Data(self)
   }
   object Vector {
@@ -57,6 +58,19 @@ trait VectorOps extends Base {
       val self = children(0).asInstanceOf[Vector]
       val v2 = children(1).asInstanceOf[Vector]
       self.$times(v2)
+    }
+    override def partialEvaluable: Boolean = true
+
+  }
+
+  case class VectorSameAs(self: Rep[Vector], v2: Rep[Vector]) extends FunctionDef[Boolean](Some(self), "sameAs", List(List(v2))) {
+    override def curriedConstructor = (copy _).curried
+    override def isPure = true
+
+    override def partialEvaluate(children: Any*): Boolean = {
+      val self = children(0).asInstanceOf[Vector]
+      val v2 = children(1).asInstanceOf[Vector]
+      self.sameAs(v2)
     }
     override def partialEvaluable: Boolean = true
 
@@ -102,6 +116,7 @@ trait VectorOps extends Base {
   def vectorNew(data: Rep[Seq[Int]]): Rep[Vector] = VectorNew(data)
   def vector$plus(self: Rep[Vector], v2: Rep[Vector]): Rep[Vector] = Vector$plus(self, v2)
   def vector$times(self: Rep[Vector], v2: Rep[Vector]): Rep[Int] = Vector$times(self, v2)
+  def vectorSameAs(self: Rep[Vector], v2: Rep[Vector]): Rep[Boolean] = VectorSameAs(self, v2)
   def vector_Field_Data(self: Rep[Vector]): Rep[Seq[Int]] = Vector_Field_Data(self)
   def vectorZeroObject(n: Rep[Int]): Rep[Vector] = VectorZeroObject(n)
   def vectorApplyObject(data: Rep[Seq[Int]]): Rep[Vector] = VectorApplyObject(data)
@@ -110,6 +125,35 @@ trait VectorOps extends Base {
 trait VectorImplicits extends VectorOps {
   // Add implicit conversions here!
 }
+trait VectorImplementations extends VectorOps {
+  override def vector$plus(self: Rep[Vector], v2: Rep[Vector]): Rep[Vector] = {
+    {
+      val resultData: this.Rep[scala.collection.immutable.IndexedSeq[Int]] = intWrapper(unit(0)).until(self.data.size).map[Int, scala.collection.immutable.IndexedSeq[Int]](__lambda(((i: this.Rep[Int]) => self.data.apply(i).$plus(v2.data.apply(i)))))(IndexedSeq.canBuildFrom[Int]);
+      Vector.apply(resultData.toSeq)
+    }
+  }
+  override def vector$times(self: Rep[Vector], v2: Rep[Vector]): Rep[Int] = {
+    {
+      var sum: this.Var[Int] = __newVar(unit(0));
+      intWrapper(unit(0)).until(self.data.size).foreach[Unit](__lambda(((i: this.Rep[Int]) => __assign(sum, __readVar(sum).$plus(self.data.apply(i).$times(v2.data.apply(i)))))));
+      __readVar(sum)
+    }
+  }
+  override def vectorSameAs(self: Rep[Vector], v2: Rep[Vector]): Rep[Boolean] = {
+    {
+      var result: this.Var[Boolean] = __newVar(unit(true));
+      intWrapper(unit(0)).until(self.data.size).foreach[Unit](__lambda(((i: this.Rep[Int]) => __ifThenElse(infix_$bang$eq(self.data.apply(i), v2.data.apply(i)), __assign(result, unit(false)), unit(())))));
+      __readVar(result)
+    }
+  }
+  override def vectorZeroObject(n: Rep[Int]): Rep[Vector] = {
+    __newVector(intWrapper(unit(0)).until(n).map[Int, scala.collection.immutable.IndexedSeq[Int]](__lambda(((x: this.Rep[Int]) => unit(0))))(IndexedSeq.canBuildFrom[Int]).toSeq)
+  }
+  override def vectorApplyObject(data: Rep[Seq[Int]]): Rep[Vector] = {
+    __newVector(data)
+  }
+}
+
 trait VectorPartialEvaluation extends VectorComponent with BasePartialEvaluation {
   // Immutable field inlining 
   override def vector_Field_Data(self: Rep[Vector]): Rep[Seq[Int]] = self match {

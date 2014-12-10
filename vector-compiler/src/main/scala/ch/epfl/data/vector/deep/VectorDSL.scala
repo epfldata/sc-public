@@ -6,7 +6,7 @@ import pardis.deep.scalalib._
 import pardis.types.PardisTypeImplicits._
 import pardis.deep.scalalib.collection._
 
-trait VectorDSL extends VectorComponent with IntComponent with SeqComponent {
+trait VectorDSL extends VectorComponent with IntComponent with SeqComponent with RichIntOps {
   case class Println(x: Rep[Any]) extends FunctionDef[Unit](None, "println", List(List(x))) {
     override def curriedConstructor = (copy _)
   }
@@ -14,3 +14,5 @@ trait VectorDSL extends VectorComponent with IntComponent with SeqComponent {
 }
 
 trait VectorDSLOpt extends VectorDSL with VectorOpt with IntPartialEvaluation
+
+trait VectorDSLInline extends VectorDSL with VectorPartialEvaluation with VectorImplementations

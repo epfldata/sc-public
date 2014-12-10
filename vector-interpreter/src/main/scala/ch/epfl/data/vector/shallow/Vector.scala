@@ -3,17 +3,32 @@ package vector
 package shallow
 
 import ch.epfl.data.pardis.annotations._
+import scala.collection.mutable.IndexedSeq
 
-@deep
-@noImplementation
+@deep // @noImplementation
+// @transformation("VectorOps")
+@needs[(scala.runtime.RichInt, Seq[_], Int, IndexedSeq[_])]
 class Vector(val data: Seq[Int]) {
   @pure def +(v2: Vector): Vector = {
-    val resultData = data.zip(v2.data).map(x => x._1 + x._2)
-    Vector(resultData)
+    val resultData = for (i <- 0 until data.size) yield (data(i) + v2.data(i))
+    Vector(resultData.toSeq)
   }
 
   @pure def *(v2: Vector): Int = {
-    data.zip(v2.data).map(x => x._1 * x._2).sum
+    var sum = 0
+    for (i <- 0 until data.size) {
+      sum += data(i) * v2.data(i)
+    }
+    sum
+  }
+
+  @pure def sameAs(v2: Vector): Boolean = {
+    var result = true
+    for (i <- 0 until data.size) {
+      if (data(i) != v2.data(i))
+        result = false
+    }
+    result
   }
 
   override def toString: String = s"Vector(${data.mkString(", ")})"

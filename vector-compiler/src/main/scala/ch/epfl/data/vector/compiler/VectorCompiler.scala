@@ -14,3 +14,13 @@ class VectorCompiler(val DSL: VectorDSL) extends Compiler[VectorDSL] {
 
   val codeGenerator = new VectorScalaGenerator
 }
+
+// class VectorCompilerOpt(val DSL: VectorDSL) extends Compiler[VectorDSL] {
+//   pipeline += DCE
+//   pipeline += VectorTransformation
+//   pipeline += ParameterPromotion
+//   pipeline += PartiallyEvaluate
+//   pipeline += DCE
+
+//   val codeGenerator = new VectorScalaGenerator
+// }
