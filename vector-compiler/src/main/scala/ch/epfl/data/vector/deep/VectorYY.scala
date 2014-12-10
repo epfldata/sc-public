@@ -18,3 +18,5 @@ trait VectorYY extends VectorDSL with BaseYinYang with FullyUnstaged with Stager
     res.asInstanceOf[T]
   }
 }
+
+trait VectorYYOpt extends VectorYY with VectorDSLOpt

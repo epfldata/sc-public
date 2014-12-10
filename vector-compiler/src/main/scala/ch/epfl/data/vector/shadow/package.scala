@@ -17,4 +17,14 @@ package object shadow {
       None,
       None,
       Map("shallow" -> false, "debug" -> 0, "featureAnalysing" -> false, "virtualizeFunctions" -> true, "ascriptionTransforming" -> true, "virtualizeVal" -> false))(block).asInstanceOf[c.Expr[Expression[T]]]
+
+  def dslOpt[T](block: => T): Expression[T] = macro _dslOpt[T]
+
+  def _dslOpt[T](c: Context)(block: c.Expr[T]): c.Expr[Expression[T]] =
+    YYTransformer[c.type, T](c)(
+      "ch.epfl.data.vector.deep.VectorYYOpt",
+      new PardisRepTransformer[c.type](c),
+      None,
+      None,
+      Map("shallow" -> false, "debug" -> 0, "featureAnalysing" -> false, "virtualizeFunctions" -> true, "ascriptionTransforming" -> true, "virtualizeVal" -> false))(block).asInstanceOf[c.Expr[Expression[T]]]
 }
