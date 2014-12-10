@@ -42,4 +42,6 @@ object VectorBuild extends Build {
       libraryDependencies += "ch.epfl.data" % "pardis-compiler_2.11" % "0.1-SNAPSHOT",
       libraryDependencies += "ch.epfl.lamp" % "scala-yinyang_2.11" % "0.2.0-SNAPSHOT",
       scalacOptions in Test ++= Seq("-optimize"))) dependsOn(vector_interpreter)
+  lazy val vector_application    = Project(id = "vector-application", base = file("vector-application"), settings = defaults ++ Seq(name := "vector-application",
+      scalacOptions in Test ++= Seq("-optimize"))) dependsOn(vector_interpreter, vector_compiler)
 }
