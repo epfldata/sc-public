@@ -29,3 +29,16 @@ object Example1Deep {
     new VectorCompiler(context).compile(prog, "GeneratedVectorApp")
   }
 }
+
+object Example1Shadow {
+  import pardis.types.PardisTypeImplicits._
+  import shallow._
+  import shadow._
+  def main(args: Array[String]) {
+    val prog = dsl {
+      val v1 = Vector(Seq(1, 2, 3))
+      val v2 = Vector(Seq(2, 3, 4))
+      println(v1 + v2)
+    }
+  }
+}
