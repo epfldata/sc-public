@@ -15,12 +15,18 @@ class VectorCompiler(val DSL: VectorDSL) extends Compiler[VectorDSL] {
   val codeGenerator = new VectorScalaGenerator
 }
 
-// class VectorCompilerOpt(val DSL: VectorDSL) extends Compiler[VectorDSL] {
-//   pipeline += DCE
-//   pipeline += VectorTransformation
-//   pipeline += ParameterPromotion
-//   pipeline += PartiallyEvaluate
-//   pipeline += DCE
+object VectorTransformation extends TransformerHandler {
+  def apply[Lang <: Base, T: PardisType](context: Lang)(block: context.Block[T]): context.Block[T] = {
+    new VectorTransformation(context.asInstanceOf[VectorDSL]).optimize(block)
+  }
+}
 
-//   val codeGenerator = new VectorScalaGenerator
-// }
+class VectorCompilerOpt(val DSL: VectorDSL) extends Compiler[VectorDSL] {
+  pipeline += DCE
+  pipeline += VectorTransformation
+  pipeline += ParameterPromotion
+  pipeline += PartiallyEvaluate
+  pipeline += DCE
+
+  val codeGenerator = new VectorScalaGenerator
+}

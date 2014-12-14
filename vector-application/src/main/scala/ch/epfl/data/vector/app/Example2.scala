@@ -60,22 +60,19 @@ object Example2DeepInline {
   }
 }
 
-// object Example2DeepOptInline {
-//   import pardis.types.PardisTypeImplicits._
-//   import deep._
-//   def main(args: Array[String]) {
-//     val context = new VectorDSLOpt {
-//       implicit def liftInt(i: Int): Rep[Int] = unit(i)
-//       def prog = {
-//         val v1 = Vector.zero(3)
-//         val v2 = Vector(Seq(2, 3, 4))
-//         val v3 = Vector(Seq(2, 3, 4))
-//         val res = v1 + v2 + v3
-//         val exp = Vector(Seq(4, 6, 8))
-//         println(res sameAs exp)
-//       }
-//     }
-//     import context._
-//     new VectorCompilerOpt(context).compile(prog, "GeneratedVectorApp")
-//   }
-// }
+object Example2DeepOptInline {
+  import pardis.types.PardisTypeImplicits._
+  import deep._
+  def main(args: Array[String]) {
+    val context = new VectorDSLOpt {
+      implicit def liftInt(i: Int): Rep[Int] = unit(i)
+      def prog = {
+        val v1 = Vector.zero(3)
+        val v2 = Vector(Seq(2, 3, 4))
+        println(v1 + v2)
+      }
+    }
+    import context._
+    new VectorCompilerOpt(context).compile(prog, "GeneratedVectorApp")
+  }
+}
