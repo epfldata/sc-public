@@ -5,8 +5,8 @@ package shallow
 import ch.epfl.data.pardis.annotations._
 import scala.collection.mutable.IndexedSeq
 
-@deep // @noImplementation
-@transformation("VectorOps")
+@deep
+@transformation
 @needs[(scala.runtime.RichInt, Seq[_], Int, IndexedSeq[_])]
 class Vector(val data: Seq[Int]) {
   @pure def +(v2: Vector): Vector = {
