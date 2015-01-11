@@ -12,7 +12,7 @@ import prettyprinter._
 class VectorCompiler(val DSL: VectorDSL) extends Compiler[VectorDSL] {
   pipeline += DCE
 
-  val codeGenerator = new VectorScalaGenerator
+  val codeGenerator = new VectorScalaGenerator(DSL)
 }
 
 object VectorTransformation extends TransformerHandler {
@@ -28,5 +28,5 @@ class VectorCompilerOpt(val DSL: VectorDSL) extends Compiler[VectorDSL] {
   pipeline += PartiallyEvaluate
   pipeline += DCE
 
-  val codeGenerator = new VectorScalaGenerator
+  val codeGenerator = new VectorScalaGenerator(DSL)
 }

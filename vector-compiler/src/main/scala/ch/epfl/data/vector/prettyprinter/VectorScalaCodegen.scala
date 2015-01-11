@@ -6,8 +6,9 @@ import pardis.utils.Document
 import pardis.ir._
 import pardis.prettyprinter._
 import scala.language.implicitConversions
+import deep.VectorDSL
 
-class VectorScalaGenerator extends ScalaCodeGenerator {
+class VectorScalaGenerator(val IR: VectorDSL) extends ScalaCodeGenerator with ASTCodeGenerator[VectorDSL] {
 
   override def getHeader: Document = s"""package ch.epfl.data
 package vector
