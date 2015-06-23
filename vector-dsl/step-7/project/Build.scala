@@ -14,7 +14,6 @@ object VectorBuild extends Build {
   )
 
   lazy val defaults = Project.defaultSettings ++ formatSettings ++ Seq(
-    resolvers += Resolver.sonatypeRepo("snapshots"),
     // add the library, reflect and the compiler as libraries
     libraryDependencies ++= Seq(
       "junit" % "junit-dep" % "4.10" % "test",

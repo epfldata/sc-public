@@ -10,7 +10,7 @@ import pardis.deep._
 import pardis.deep.scalalib._
 import pardis.deep.scalalib.collection._
 import pardis.deep.scalalib.io._
-trait VectorOps extends Base {
+trait VectorOps extends Base with RichIntOps with SeqOps with NumericOps with IndexedSeqOps {
   // Type representation
   val VectorType = VectorIRs.VectorType
   implicit val typeVector: TypeRep[Vector] = VectorType
@@ -52,6 +52,10 @@ trait VectorOps extends Base {
   type Vector = ch.epfl.data.vector.shallow.Vector
 }
 object VectorIRs extends Base {
+  import RichIntIRs._
+  import SeqIRs._
+  import NumericIRs._
+  import IndexedSeqIRs._
   // Type representation
   case object VectorType extends TypeRep[Vector] {
     def rebuild(newArguments: TypeRep[_]*): TypeRep[_] = VectorType
@@ -146,6 +150,35 @@ object VectorIRs extends Base {
 trait VectorImplicits extends VectorOps {
   // Add implicit conversions here!
 }
+trait VectorImplementations extends VectorOps {
+  override def vector$plus(self: Rep[Vector], v2: Rep[Vector]): Rep[Vector] = {
+    {
+      val resultData: this.Rep[scala.collection.immutable.IndexedSeq[Int]] = intWrapper(unit(0)).until(self.data.size).map[Int, scala.collection.immutable.IndexedSeq[Int]](__lambda(((i: this.Rep[Int]) => self.data.apply(i).$plus(v2.data.apply(i)))))(IndexedSeq.canBuildFrom[Int]);
+      Vector.apply(resultData.toSeq)
+    }
+  }
+  override def vector$times(self: Rep[Vector], v2: Rep[Vector]): Rep[Int] = {
+    {
+      var sum: this.Var[Int] = __newVarNamed(unit(0), unit("sum"));
+      intWrapper(unit(0)).until(self.data.size).foreach[Unit](__lambda(((i: this.Rep[Int]) => __assign(sum, __readVar(sum).$plus(self.data.apply(i).$times(v2.data.apply(i)))))));
+      __readVar(sum)
+    }
+  }
+  override def vectorSameAs(self: Rep[Vector], v2: Rep[Vector]): Rep[Boolean] = {
+    {
+      var result: this.Var[Boolean] = __newVarNamed(unit(true), unit("result"));
+      intWrapper(unit(0)).until(self.data.size).foreach[Unit](__lambda(((i: this.Rep[Int]) => __ifThenElse(infix_$bang$eq(self.data.apply(i), v2.data.apply(i)), __assign(result, unit(false)), unit(())))));
+      __readVar(result)
+    }
+  }
+  override def vectorZeroObject(n: Rep[Int]): Rep[Vector] = {
+    __newVector(intWrapper(unit(0)).until(n).map[Int, scala.collection.immutable.IndexedSeq[Int]](__lambda(((x: this.Rep[Int]) => unit(0))))(IndexedSeq.canBuildFrom[Int]).toSeq)
+  }
+  override def vectorApplyObject(data: Rep[Seq[Int]]): Rep[Vector] = {
+    __newVector(data)
+  }
+}
+
 trait VectorPartialEvaluation extends VectorComponent with BasePartialEvaluation {
   // Immutable field inlining 
   override def vector_Field_Data(self: Rep[Vector]): Rep[Seq[Int]] = self match {
@@ -157,3 +190,88 @@ trait VectorPartialEvaluation extends VectorComponent with BasePartialEvaluation
   // Pure function partial evaluation
 }
 trait VectorComponent extends VectorOps with VectorImplicits {}
+class VectorTransformation(override val IR: VectorOps with RichIntOps with SeqOps with NumericOps with IndexedSeqOps) extends pardis.optimization.RecursiveRuleBasedTransformer[VectorOps with RichIntOps with SeqOps with NumericOps with IndexedSeqOps](IR) {
+  import IR.{ VectorRep => _, _ }
+  type Rep[T] = IR.Rep[T]
+  type Var[T] = IR.Var[T]
+
+  private implicit class VectorRep1(self: Rep[Vector]) {
+
+    def __newVector(data: Rep[Seq[Int]]): Rep[Vector] = IR.vectorNew(data)
+    def +(v2: Rep[Vector]): Rep[Vector] = IR.vector$plus(self, v2)
+    def *(v2: Rep[Vector]): Rep[Int] = IR.vector$times(self, v2)
+    def sameAs(v2: Rep[Vector]): Rep[Boolean] = IR.vectorSameAs(self, v2)
+    def data: Rep[Seq[Int]] = vector_Field_Data(self)
+    def zero(n: Rep[Int]): Rep[Vector] = IR.vectorZeroObject(n)
+    def apply(data: Rep[Seq[Int]]): Rep[Vector] = IR.vectorApplyObject(data)
+  }
+  def vector_Field_Data(self: Rep[Vector]): Rep[Seq[Int]] = field[Seq[Int]](self, "data")
+  rewrite += statement {
+    case sym -> (node @ VectorNew(nodedata)) =>
+      val data = nodedata.asInstanceOf[Rep[Seq[Int]]]
+
+      val self = sym.asInstanceOf[Rep[Vector]]
+
+      val _data = ("data", false, data)
+      val newSelf = __new[Vector](_data)
+      (newSelf)
+  }
+
+  def __newVector(data: Rep[Seq[Int]]): Rep[Vector] = VectorNew(data)
+
+  rewrite += rule {
+    case node @ Vector$plus(nodeself, nodev2) =>
+
+      val self = nodeself.asInstanceOf[Rep[Vector]]
+      val v2 = nodev2.asInstanceOf[Rep[Vector]]
+
+      {
+        val resultData: this.Rep[scala.collection.immutable.IndexedSeq[Int]] = intWrapper(unit(0)).until(self.data.size).map[Int, scala.collection.immutable.IndexedSeq[Int]](__lambda(((i: this.Rep[Int]) => self.data.apply(i).$plus(v2.data.apply(i)))))(IndexedSeq.canBuildFrom[Int]);
+        Vector.apply(resultData.toSeq)
+      }
+  }
+
+  rewrite += rule {
+    case node @ Vector$times(nodeself, nodev2) =>
+
+      val self = nodeself.asInstanceOf[Rep[Vector]]
+      val v2 = nodev2.asInstanceOf[Rep[Vector]]
+
+      {
+        var sum: this.Var[Int] = __newVarNamed(unit(0), unit("sum"));
+        intWrapper(unit(0)).until(self.data.size).foreach[Unit](__lambda(((i: this.Rep[Int]) => __assign(sum, __readVar(sum).$plus(self.data.apply(i).$times(v2.data.apply(i)))))));
+        __readVar(sum)
+      }
+  }
+
+  rewrite += rule {
+    case node @ VectorSameAs(nodeself, nodev2) =>
+
+      val self = nodeself.asInstanceOf[Rep[Vector]]
+      val v2 = nodev2.asInstanceOf[Rep[Vector]]
+
+      {
+        var result: this.Var[Boolean] = __newVarNamed(unit(true), unit("result"));
+        intWrapper(unit(0)).until(self.data.size).foreach[Unit](__lambda(((i: this.Rep[Int]) => __ifThenElse(infix_$bang$eq(self.data.apply(i), v2.data.apply(i)), __assign(result, unit(false)), unit(())))));
+        __readVar(result)
+      }
+  }
+
+  rewrite += rule {
+    case node @ VectorZeroObject(noden) =>
+
+      val n = noden.asInstanceOf[Rep[Int]]
+
+      __newVector(intWrapper(unit(0)).until(n).map[Int, scala.collection.immutable.IndexedSeq[Int]](__lambda(((x: this.Rep[Int]) => unit(0))))(IndexedSeq.canBuildFrom[Int]).toSeq)
+  }
+
+  rewrite += rule {
+    case node @ VectorApplyObject(nodedata) =>
+
+      val data = nodedata.asInstanceOf[Rep[Seq[Int]]]
+
+      __newVector(data)
+  }
+
+}
+
