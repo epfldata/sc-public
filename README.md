@@ -1,6 +1,6 @@
-pardis-examples
+SC Examples
 ===============
 
-Example DSLs for working with Pardis
+Example DSLs for working with SC framework:
 
-Please take a look at the [wiki](https://github.com/amirsh/pardis-examples/wiki) page.
+Please take a look at the [wiki](https://github.com/epfldata/sc-examples/wiki) page.
