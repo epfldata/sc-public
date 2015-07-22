@@ -1,6 +1,8 @@
 SC Examples
 ===============
 
-Example DSLs for working with SC framework:
+This repository contains example Domain-Specific Languages (DSLs) defined using SC framework.
 
-Please take a look at the [wiki](https://github.com/epfldata/sc-examples/wiki) page.
+In order to learn how to develop DSLs using SC, first have a look at the [development process](https://github.com/epfldata/sc-examples/wiki/Development-process) of an embedded DSL.
+
+We concretely demonstrate this development process through a [toy example](https://github.com/epfldata/sc-examples/vector-dsl/README.md) (defining a DSL for working with Vectors).
