@@ -74,12 +74,12 @@ object VectorIRs extends Base {
     override def curriedConstructor = (copy _).curried
     override def isPure = true
 
-    override def partialEvaluate(children: Any*): Vector = {
+    override def partiallyEvaluate(children: Any*): Vector = {
       val self = children(0).asInstanceOf[Vector]
       val v2 = children(1).asInstanceOf[Vector]
       self.$plus(v2)
     }
-    override def partialEvaluable: Boolean = true
+    override def partiallyEvaluable: Boolean = true
 
   }
 
@@ -87,12 +87,12 @@ object VectorIRs extends Base {
     override def curriedConstructor = (copy _).curried
     override def isPure = true
 
-    override def partialEvaluate(children: Any*): Int = {
+    override def partiallyEvaluate(children: Any*): Int = {
       val self = children(0).asInstanceOf[Vector]
       val v2 = children(1).asInstanceOf[Vector]
       self.$times(v2)
     }
-    override def partialEvaluable: Boolean = true
+    override def partiallyEvaluable: Boolean = true
 
   }
 
@@ -100,12 +100,12 @@ object VectorIRs extends Base {
     override def curriedConstructor = (copy _).curried
     override def isPure = true
 
-    override def partialEvaluate(children: Any*): Boolean = {
+    override def partiallyEvaluate(children: Any*): Boolean = {
       val self = children(0).asInstanceOf[Vector]
       val v2 = children(1).asInstanceOf[Vector]
       self.sameAs(v2)
     }
-    override def partialEvaluable: Boolean = true
+    override def partiallyEvaluable: Boolean = true
 
   }
 
@@ -113,11 +113,11 @@ object VectorIRs extends Base {
     override def curriedConstructor = (copy _)
     override def isPure = true
 
-    override def partialEvaluate(children: Any*): Seq[Int] = {
+    override def partiallyEvaluate(children: Any*): Seq[Int] = {
       val self = children(0).asInstanceOf[Vector]
       self.data
     }
-    override def partialEvaluable: Boolean = true
+    override def partiallyEvaluable: Boolean = true
 
   }
 
@@ -125,11 +125,11 @@ object VectorIRs extends Base {
     override def curriedConstructor = (copy _)
     override def isPure = true
 
-    override def partialEvaluate(children: Any*): Vector = {
+    override def partiallyEvaluate(children: Any*): Vector = {
       val n = children(0).asInstanceOf[Int]
       ch.epfl.data.vector.shallow.Vector.zero(n)
     }
-    override def partialEvaluable: Boolean = true
+    override def partiallyEvaluable: Boolean = true
 
   }
 
@@ -137,11 +137,11 @@ object VectorIRs extends Base {
     override def curriedConstructor = (copy _)
     override def isPure = true
 
-    override def partialEvaluate(children: Any*): Vector = {
+    override def partiallyEvaluate(children: Any*): Vector = {
       val data = children(0).asInstanceOf[Seq[Int]]
       ch.epfl.data.vector.shallow.Vector.apply(data)
     }
-    override def partialEvaluable: Boolean = true
+    override def partiallyEvaluable: Boolean = true
 
   }
 
@@ -153,7 +153,7 @@ trait VectorImplicits extends VectorOps {
 trait VectorImplementations extends VectorOps {
   override def vector$plus(self: Rep[Vector], v2: Rep[Vector]): Rep[Vector] = {
     {
-      val resultData: this.Rep[scala.collection.immutable.IndexedSeq[Int]] = intWrapper(unit(0)).until(self.data.size).map[Int, scala.collection.immutable.IndexedSeq[Int]](__lambda(((i: this.Rep[Int]) => self.data.apply(i).$plus(v2.data.apply(i)))))(IndexedSeq.canBuildFrom[Int]);
+      val resultData: this.Rep[scala.collection.immutable.IndexedSeq[Int]] = intWrapper(unit(0)).until(self.data.size).map[Int, scala.collection.immutable.IndexedSeq[Int]](__lambda(((i: this.Rep[Int]) => self.data.apply(i).$plus(v2.data.apply(i)))));
       Vector.apply(resultData.toSeq)
     }
   }
@@ -172,7 +172,7 @@ trait VectorImplementations extends VectorOps {
     }
   }
   override def vectorZeroObject(n: Rep[Int]): Rep[Vector] = {
-    __newVector(intWrapper(unit(0)).until(n).map[Int, scala.collection.immutable.IndexedSeq[Int]](__lambda(((x: this.Rep[Int]) => unit(0))))(IndexedSeq.canBuildFrom[Int]).toSeq)
+    __newVector(intWrapper(unit(0)).until(n).map[Int, scala.collection.immutable.IndexedSeq[Int]](__lambda(((x: this.Rep[Int]) => unit(0)))).toSeq)
   }
   override def vectorApplyObject(data: Rep[Seq[Int]]): Rep[Vector] = {
     __newVector(data)
@@ -207,7 +207,7 @@ class VectorTransformation(override val IR: VectorOps with RichIntOps with SeqOp
   }
   def vector_Field_Data(self: Rep[Vector]): Rep[Seq[Int]] = field[Seq[Int]](self, "data")
   rewrite += statement {
-    case sym -> (node @ VectorNew(nodedata)) =>
+    case sym -> (node @ VectorNew(nodedata)) if mustBeTransformed(sym) =>
       val data = nodedata.asInstanceOf[Rep[Seq[Int]]]
 
       val self = sym.asInstanceOf[Rep[Vector]]
@@ -220,19 +220,19 @@ class VectorTransformation(override val IR: VectorOps with RichIntOps with SeqOp
   def __newVector(data: Rep[Seq[Int]]): Rep[Vector] = VectorNew(data)
 
   rewrite += rule {
-    case node @ Vector$plus(nodeself, nodev2) =>
+    case node @ Vector$plus(nodeself, nodev2) if mustBeTransformed(nodeself) =>
 
       val self = nodeself.asInstanceOf[Rep[Vector]]
       val v2 = nodev2.asInstanceOf[Rep[Vector]]
 
       {
-        val resultData: this.Rep[scala.collection.immutable.IndexedSeq[Int]] = intWrapper(unit(0)).until(self.data.size).map[Int, scala.collection.immutable.IndexedSeq[Int]](__lambda(((i: this.Rep[Int]) => self.data.apply(i).$plus(v2.data.apply(i)))))(IndexedSeq.canBuildFrom[Int]);
+        val resultData: this.Rep[scala.collection.immutable.IndexedSeq[Int]] = intWrapper(unit(0)).until(self.data.size).map[Int, scala.collection.immutable.IndexedSeq[Int]](__lambda(((i: this.Rep[Int]) => self.data.apply(i).$plus(v2.data.apply(i)))));
         Vector.apply(resultData.toSeq)
       }
   }
 
   rewrite += rule {
-    case node @ Vector$times(nodeself, nodev2) =>
+    case node @ Vector$times(nodeself, nodev2) if mustBeTransformed(nodeself) =>
 
       val self = nodeself.asInstanceOf[Rep[Vector]]
       val v2 = nodev2.asInstanceOf[Rep[Vector]]
@@ -245,7 +245,7 @@ class VectorTransformation(override val IR: VectorOps with RichIntOps with SeqOp
   }
 
   rewrite += rule {
-    case node @ VectorSameAs(nodeself, nodev2) =>
+    case node @ VectorSameAs(nodeself, nodev2) if mustBeTransformed(nodeself) =>
 
       val self = nodeself.asInstanceOf[Rep[Vector]]
       val v2 = nodev2.asInstanceOf[Rep[Vector]]
@@ -258,15 +258,15 @@ class VectorTransformation(override val IR: VectorOps with RichIntOps with SeqOp
   }
 
   rewrite += rule {
-    case node @ VectorZeroObject(noden) =>
+    case node @ VectorZeroObject(noden) if mustBeTransformed(nodeself) =>
 
       val n = noden.asInstanceOf[Rep[Int]]
 
-      __newVector(intWrapper(unit(0)).until(n).map[Int, scala.collection.immutable.IndexedSeq[Int]](__lambda(((x: this.Rep[Int]) => unit(0))))(IndexedSeq.canBuildFrom[Int]).toSeq)
+      __newVector(intWrapper(unit(0)).until(n).map[Int, scala.collection.immutable.IndexedSeq[Int]](__lambda(((x: this.Rep[Int]) => unit(0)))).toSeq)
   }
 
   rewrite += rule {
-    case node @ VectorApplyObject(nodedata) =>
+    case node @ VectorApplyObject(nodedata) if mustBeTransformed(nodeself) =>
 
       val data = nodedata.asInstanceOf[Rep[Seq[Int]]]
 
