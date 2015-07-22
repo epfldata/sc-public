@@ -82,11 +82,11 @@ object VectorIRs extends Base {
     override def curriedConstructor = (copy _)
     override def isPure = true
 
-    override def partialEvaluate(children: Any*): Seq[Int] = {
+    override def partiallyEvaluate(children: Any*): Seq[Int] = {
       val self = children(0).asInstanceOf[Vector]
       self.data
     }
-    override def partialEvaluable: Boolean = true
+    override def partiallyEvaluable: Boolean = true
 
   }
 
