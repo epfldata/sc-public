@@ -1,3 +1,6 @@
+Vector Tutorial
+===============
+
 As we discussed in development process, there are two main phases for defining an EDSL in Scala. First, we should define an interpreter for the DSL in Scala. Second, a compiler should be defined for this DSL in Scala. The compiler definition involves defining IR nodes, optimizations and code generation for the given DSL.
 
 ## Vector Interpreter (Step 1)
