@@ -258,7 +258,7 @@ class VectorTransformation(override val IR: VectorOps with RichIntOps with SeqOp
   }
 
   rewrite += rule {
-    case node @ VectorZeroObject(noden) if mustBeTransformed(nodeself) =>
+    case node @ VectorZeroObject(noden) =>
 
       val n = noden.asInstanceOf[Rep[Int]]
 
@@ -266,7 +266,7 @@ class VectorTransformation(override val IR: VectorOps with RichIntOps with SeqOp
   }
 
   rewrite += rule {
-    case node @ VectorApplyObject(nodedata) if mustBeTransformed(nodeself) =>
+    case node @ VectorApplyObject(nodedata) =>
 
       val data = nodedata.asInstanceOf[Rep[Seq[Int]]]
 
