@@ -10,7 +10,7 @@ import pardis.deep._
 import pardis.deep.scalalib._
 import pardis.deep.scalalib.collection._
 import pardis.deep.scalalib.io._
-trait ListOps extends Base with CharOps with Tuple2Ops {  
+trait ListOps extends Base with NumericOps with Tuple2Ops with SeqOps {  
   // Type representation
   val ListType = ListIRs.ListType
   type ListType[A] = ListIRs.ListType[A]
@@ -60,8 +60,9 @@ trait ListOps extends Base with CharOps with Tuple2Ops {
   type List[A] = mylib.shallow.List[A]
 }
 object ListIRs extends Base {
-  import CharIRs._
+  import NumericIRs._
   import Tuple2IRs._
+  import SeqIRs._
   // Type representation
   case class ListType[A](typeA: TypeRep[A]) extends TypeRep[List[A]] {
     def rebuild(newArguments: TypeRep[_]*): TypeRep[_] = ListType(newArguments(0).asInstanceOf[TypeRep[_]])
@@ -76,18 +77,54 @@ object ListIRs extends Base {
 
   case class ListMap[A, B](self : Rep[List[A]], f : Rep[((A) => B)])(implicit val typeA : TypeRep[A], val typeB : TypeRep[B]) extends FunctionDef[List[B]](Some(self), "map", List(List(f))){
     override def curriedConstructor = (copy[A, B] _).curried
+    override def isPure = true
+
+    override def partiallyEvaluate(children: Any*): List[B] = {
+      val self = children(0).asInstanceOf[List[A]]
+      val f = children(1).asInstanceOf[((A) => B)]
+      self.map[B](f)
+    }
+    override def partiallyEvaluable: Boolean = true
+
   }
 
   case class ListFilter[A](self : Rep[List[A]], f : Rep[((A) => Boolean)])(implicit val typeA : TypeRep[A]) extends FunctionDef[List[A]](Some(self), "filter", List(List(f))){
     override def curriedConstructor = (copy[A] _).curried
+    override def isPure = true
+
+    override def partiallyEvaluate(children: Any*): List[A] = {
+      val self = children(0).asInstanceOf[List[A]]
+      val f = children(1).asInstanceOf[((A) => Boolean)]
+      self.filter(f)
+    }
+    override def partiallyEvaluable: Boolean = true
+
   }
 
   case class ListFold[A, B](self : Rep[List[A]], init : Rep[B], f : Rep[((B,A) => B)])(implicit val typeA : TypeRep[A], val typeB : TypeRep[B]) extends FunctionDef[B](Some(self), "fold", List(List(init), List(f))){
     override def curriedConstructor = (copy[A, B] _).curried
+    override def isPure = true
+
+    override def partiallyEvaluate(children: Any*): B = {
+      val self = children(0).asInstanceOf[List[A]]
+      val init = children(1).asInstanceOf[B]
+      val f = children(2).asInstanceOf[((B,A) => B)]
+      self.fold[B](init)(f)
+    }
+    override def partiallyEvaluable: Boolean = true
+
   }
 
   case class ListSize[A](self : Rep[List[A]])(implicit val typeA : TypeRep[A]) extends FunctionDef[Int](Some(self), "size", List()){
     override def curriedConstructor = (copy[A] _)
+    override def isPure = true
+
+    override def partiallyEvaluate(children: Any*): Int = {
+      val self = children(0).asInstanceOf[List[A]]
+      self.size
+    }
+    override def partiallyEvaluable: Boolean = true
+
   }
 
   case class List_Field_Data[A](self : Rep[List[A]])(implicit val typeA : TypeRep[A]) extends FieldDef[Seq[A]](self, "data"){
@@ -134,8 +171,9 @@ import ch.epfl.data.sc.pardis.quasi.TypeParameters.MaybeParamTag
 
 object ListQuasiNodes extends BaseExtIR {
   import ListIRs._
-  import CharQuasiNodes._
+  import NumericQuasiNodes._
   import Tuple2QuasiNodes._
+  import SeqQuasiNodes._
   // case classes
   case class ListNewExt[A](data : Rep[Seq[A]])(implicit val paramA : MaybeParamTag[A]) extends FunctionDef[ListNew[A], List[A]] {
     override def nodeUnapply(t: ListNew[A]): Option[Product] = (ListNew.unapply(t): Option[Product]) map { r =>
@@ -183,12 +221,13 @@ object ListQuasiNodes extends BaseExtIR {
   type List[A] = mylib.shallow.List[A]
 }
 
-trait ListExtOps extends BaseExt with CharExtOps with Tuple2ExtOps {
+trait ListExtOps extends BaseExt with NumericExtOps with Tuple2ExtOps with SeqExtOps {
   
   import ListQuasiNodes._
   import ch.epfl.data.sc.pardis.quasi.OverloadHackObj._
-  import CharQuasiNodes._
+  import NumericQuasiNodes._
   import Tuple2QuasiNodes._
+  import SeqQuasiNodes._
   implicit class ListRep[A](self : Rep[List[A]])(implicit paramA : MaybeParamTag[A]) {
      def map[B](f : Rep[(A => B)])(implicit paramB : MaybeParamTag[B]) : Rep[List[B]] = listMap[A, B](self, f)(paramA, paramB)
      def filter(f : Rep[(A => Boolean)]) : Rep[List[A]] = listFilter[A](self, f)(paramA)
