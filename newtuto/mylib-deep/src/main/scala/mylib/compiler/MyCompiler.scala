@@ -9,21 +9,21 @@ import sc.pardis.optimization._
 import sc.pardis.compiler._
 import deep._
 
-class MyCompiler(val DSL: MyLibDSL) extends Compiler[MyLibDSL] {
+class MyCompiler(val DSL: MyLibDSL, name: String, offlineOptim: Boolean) extends Compiler[MyLibDSL] {
   
   // Pipeline Definition:
   
-  //pipeline += DCE
-  
-  //pipeline += PartiallyEvaluate  // crashes: key not found x1
-  
-  pipeline += new TransformerHandler {
-    override def apply[Lang <: Base, T: PardisType](context: Lang)(block: context.Block[T]): context.Block[T] =
-      new Optim.Offline(context.asInstanceOf[MyLibDSL]).optimize(block)
-  }
-  
   pipeline += DCE
   
+  if (offlineOptim) {
+    
+    pipeline += PartiallyEvaluate  // used to crash... for some reason... <- needs DCE to run before!
+    
+    pipeline += new Optim.Offline(DSL)
+    
+    pipeline += DCE
+    
+  }
   
   // Outputting Scala code inside an executable wrapper:
   
@@ -36,7 +36,7 @@ class MyCompiler(val DSL: MyLibDSL) extends Compiler[MyLibDSL] {
       |package mylib
       |import mylib.shallow._""".stripMargin
     override def getTraitSignature(): Document = s"""
-      |object GeneratedVectorApp {
+      |object $name {
       |  def main(args: Array[String]): Unit = println(""".stripMargin
     override def getFooter(): Document = s"""
       |  )

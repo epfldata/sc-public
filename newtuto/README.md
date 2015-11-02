@@ -50,7 +50,7 @@ SC provides a way to deeply embed our shallow EDSL _automatically_. This is done
 ```scala
 @deep
 @quasi
-@needs[Char :: (_,_)]
+@needs[Numeric[_] :: (_,_) :: Seq[_]]
 @noImplementation
 class List[A](val data: Seq[A]) {
   ...
@@ -208,7 +208,7 @@ Again, both Quasiquotes and a manual approach can be used to define transformati
 
 [TODO] more advanced example: map.map -> map
 
-[TODO] talk about inlining
+[TODO] talk about inlining, and `@transformation` (to inline method impls)
 
 [TODO] generalization of size optim with `dsl"List(..$args).size"`
 
