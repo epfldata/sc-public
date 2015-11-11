@@ -18,7 +18,7 @@ object Optim {
   class Offline(override val IR: MyLibDSL) extends sc.pardis.optimization.RecursiveRuleBasedTransformer[MyLibDSL](IR) {
     
     // Replacing size on singleton lists by literal 1
-    rewrite += rule {
+    rewrite += symRule {
       case dsl"List($_).size" => dsl"1"
     }
     

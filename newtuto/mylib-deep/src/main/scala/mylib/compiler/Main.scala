@@ -24,8 +24,10 @@ object Main extends App {
   {
     import Context._  // needed to provide the `compile` methods with an implicit TypeRep
     
-    new MyCompiler(Context, "GeneratedApp", offlineOptim = false).compile(pgrm, "src/main/scala/GeneratedApp")
-    new MyCompiler(Context, "GeneratedAppOpt", offlineOptim = true).compile(pgrm, "src/main/scala/GeneratedAppOpt")
+    new MyCompiler(Context, "GenApp", offlineOptim = false).compile(pgrm, "src/main/scala/GenApp")
+    new MyCompiler(Context, "GenAppOpt", offlineOptim = true).compile(pgrm, "src/main/scala/GenAppOpt")
+    new MyCompiler(Context, "GenAppLow", lowering = true).compile(pgrm, "src/main/scala/GenAppLow")
+    new MyCompiler(Context, "GenAppOptLow", offlineOptim = true, lowering = true).compile(pgrm, "src/main/scala/GenAppOptLow")
   }
   
 }
