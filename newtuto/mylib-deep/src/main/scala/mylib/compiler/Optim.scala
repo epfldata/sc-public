@@ -2,43 +2,60 @@ package mylib
 package compiler
 
 import ch.epfl.data.sc
-import ch.epfl.data.sc.pardis.ast.lambda.Lambda
 import ch.epfl.data.sc.pardis.deep.scalalib.NumericOps
-import ch.epfl.data.sc.pardis.deep.scalalib.collection.SeqIRs.SeqApplyObject
-import ch.epfl.data.sc.pardis.ir.ObjectOpsIRs.Rep
-import ch.epfl.data.sc.pardis.ir.{PardisLambda, PardisLiftedSeq, PardisVarArg}
+import ch.epfl.data.sc.pardis.ir.{ PardisLiftedSeq }
 import ch.epfl.data.sc.pardis.quasi.TypeParameters._
-import ch.epfl.data.sc.pardis.quasi.anf.{LambdaExtract, Lambda2Extract}
 import mylib.deep.{ListComponent, MyLibDSL}
 
 import shallow._
 
 object Optim {
   
-  class Offline(override val IR: MyLibDSL) extends sc.pardis.optimization.RecursiveRuleBasedTransformer[MyLibDSL](IR) {
+  //object Offline {
     
-    // Replacing size on singleton lists by literal 1
-    rewrite += symRule {
-      case dsl"List($_).size" => dsl"1"
+    class HighLevel(override val IR: MyLibDSL) extends sc.pardis.optimization.RecursiveRuleBasedTransformer[MyLibDSL](IR) {
+      val params = newTypeParams('A,'B,'C); import params._
+      import IR._
+      
+      //// Replacing size on singleton lists by literal 1
+      //rewrite += symRule {
+      //  case dsl"List($_).size" => dsl"1": Rep[_]
+      //}
+      
+      // Replacing size on list constructors by a literal
+      rewrite += symRule {
+        //case dsl"shallow.List[A](${IR.Def(PardisLiftedSeq( xs ))}:_*).size" => dsl"${xs.size}": Rep[_] // doesn't work (why?)
+        case dsl"shallow.List[A](${IR.Def(PardisLiftedSeq( xs ))}:_*).size" => lift(xs.size): Rep[_]
+      }
+      
+      // Optimizing chained map applications; you can check it works by commenting the one in `Online`
+      rewrite += rule {
+        case dsl"($ls: List[A]).map($f: A => B).map($g: B => C)" =>
+          dsl"($ls).map(x => $g($f(x)))": Rep[_]
+      }
+      
+      // Optimizing chained filter applications
+      rewrite += rule {
+        case dsl"($ls: List[A]).filter($f: A => Boolean).filter($g: A => Boolean)" =>
+          dsl"($ls).filter(x => $f(x) && $g(x))": Rep[_]
+      }
+      
+      // Note that optimizing chained map/filter needs a lowering
+      
     }
     
-    // Optimizing chained map applications; you can check it works by commenting the one in `Online`
-    rewrite += {
-      val params = newTypeParams('A,'B,'C); import params._
-      rule {
-        case dsl"($ls: List[A]).map($f: A => B).map($g: B => C)" =>
-          dsl"($ls).map(x => $g($f(x)))"
-      }}
-    
-    // Reduction of redexes (inlining calls to lambdas)
-    rewrite += {
+    class Generic(override val IR: MyLibDSL) extends sc.pardis.optimization.RecursiveRuleBasedTransformer[MyLibDSL](IR) {
       val params = newTypeParams('A,'B); import params._
-      symRule {
+      
+      // Reduction of redexes (inlining calls to lambdas)
+      rewrite += symRule {
         case dsl"(${Lambda(f)}: A => B).apply($arg)" =>
           f(arg)
-      }}
-    
-  }
+      }
+      
+    }
+  
+  //}
   
   trait Online extends ListComponent with NumericOps {
     

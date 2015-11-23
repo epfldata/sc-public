@@ -18,12 +18,14 @@ trait ListOps extends Base with NumericOps with Tuple2Ops with SeqOps {
   implicit class ListRep[A](self : Rep[List[A]])(implicit typeA : TypeRep[A]) {
      def map[B](f : Rep[(A => B)])(implicit typeB : TypeRep[B]) : Rep[List[B]] = listMap[A, B](self, f)(typeA, typeB)
      def filter(f : Rep[(A => Boolean)]) : Rep[List[A]] = listFilter[A](self, f)(typeA)
-     def fold[B](init : Rep[B])(f : Rep[((B,A) => B)])(implicit typeB : TypeRep[B]) : Rep[B] = listFold[A, B](self, init, f)(typeA, typeB)
+     def fold[B](init : Rep[B], f : Rep[((B,A) => B)])(implicit typeB : TypeRep[B]) : Rep[B] = listFold[A, B](self, init, f)(typeA, typeB)
      def size : Rep[Int] = listSize[A](self)(typeA)
+     def +(that : Rep[A]) : Rep[List[A]] = list$plus[A](self, that)(typeA)
      def data : Rep[Seq[A]] = list_Field_Data[A](self)(typeA)
   }
   object List {
-     def apply[A](data : Rep[A]*)(implicit typeA : TypeRep[A]) : Rep[List[A]] = listApplyObject[A](data:_*)(typeA)
+     def apply[A](data : Rep[A]*)(implicit typeA : TypeRep[A], overload1 : Overloaded1) : Rep[List[A]] = listApplyObject1[A](data:_*)(typeA)
+     def apply[A]()(implicit typeA : TypeRep[A], overload2 : Overloaded2) : Rep[List[A]] = listApplyObject2[A]()(typeA)
      def zip[A, B](as : Rep[List[A]], bs : Rep[List[B]])(implicit typeA : TypeRep[A], typeB : TypeRep[B]) : Rep[List[Tuple2[A, B]]] = listZipObject[A, B](as, bs)(typeA, typeB)
   }
   // constructors
@@ -39,10 +41,14 @@ trait ListOps extends Base with NumericOps with Tuple2Ops with SeqOps {
   type ListFold[A, B] = ListIRs.ListFold[A, B]
   val ListSize = ListIRs.ListSize
   type ListSize[A] = ListIRs.ListSize[A]
+  val List$plus = ListIRs.List$plus
+  type List$plus[A] = ListIRs.List$plus[A]
   val List_Field_Data = ListIRs.List_Field_Data
   type List_Field_Data[A] = ListIRs.List_Field_Data[A]
-  val ListApplyObject = ListIRs.ListApplyObject
-  type ListApplyObject[A] = ListIRs.ListApplyObject[A]
+  val ListApplyObject1 = ListIRs.ListApplyObject1
+  type ListApplyObject1[A] = ListIRs.ListApplyObject1[A]
+  val ListApplyObject2 = ListIRs.ListApplyObject2
+  type ListApplyObject2[A] = ListIRs.ListApplyObject2[A]
   val ListZipObject = ListIRs.ListZipObject
   type ListZipObject[A, B] = ListIRs.ListZipObject[A, B]
   // method definitions
@@ -51,11 +57,13 @@ trait ListOps extends Base with NumericOps with Tuple2Ops with SeqOps {
    def listFilter[A](self : Rep[List[A]], f : Rep[((A) => Boolean)])(implicit typeA : TypeRep[A]) : Rep[List[A]] = ListFilter[A](self, f)
    def listFold[A, B](self : Rep[List[A]], init : Rep[B], f : Rep[((B,A) => B)])(implicit typeA : TypeRep[A], typeB : TypeRep[B]) : Rep[B] = ListFold[A, B](self, init, f)
    def listSize[A](self : Rep[List[A]])(implicit typeA : TypeRep[A]) : Rep[Int] = ListSize[A](self)
+   def list$plus[A](self : Rep[List[A]], that : Rep[A])(implicit typeA : TypeRep[A]) : Rep[List[A]] = List$plus[A](self, that)
    def list_Field_Data[A](self : Rep[List[A]])(implicit typeA : TypeRep[A]) : Rep[Seq[A]] = List_Field_Data[A](self)
-   def listApplyObject[A](data : Rep[A]*)(implicit typeA : TypeRep[A]) : Rep[List[A]] = {
+   def listApplyObject1[A](data : Rep[A]*)(implicit typeA : TypeRep[A]) : Rep[List[A]] = {
     val dataOutput = __liftSeq(data.toSeq)
-    ListApplyObject[A](dataOutput)
+    ListApplyObject1[A](dataOutput)
   }
+   def listApplyObject2[A]()(implicit typeA : TypeRep[A]) : Rep[List[A]] = ListApplyObject2[A]()
    def listZipObject[A, B](as : Rep[List[A]], bs : Rep[List[B]])(implicit typeA : TypeRep[A], typeB : TypeRep[B]) : Rep[List[Tuple2[A, B]]] = ListZipObject[A, B](as, bs)
   type List[A] = mylib.shallow.List[A]
 }
@@ -101,7 +109,7 @@ object ListIRs extends Base {
 
   }
 
-  case class ListFold[A, B](self : Rep[List[A]], init : Rep[B], f : Rep[((B,A) => B)])(implicit val typeA : TypeRep[A], val typeB : TypeRep[B]) extends FunctionDef[B](Some(self), "fold", List(List(init), List(f))){
+  case class ListFold[A, B](self : Rep[List[A]], init : Rep[B], f : Rep[((B,A) => B)])(implicit val typeA : TypeRep[A], val typeB : TypeRep[B]) extends FunctionDef[B](Some(self), "fold", List(List(init,f))){
     override def curriedConstructor = (copy[A, B] _).curried
     override def isPure = true
 
@@ -109,7 +117,7 @@ object ListIRs extends Base {
       val self = children(0).asInstanceOf[List[A]]
       val init = children(1).asInstanceOf[B]
       val f = children(2).asInstanceOf[((B,A) => B)]
-      self.fold[B](init)(f)
+      self.fold[B](init, f)
     }
     override def partiallyEvaluable: Boolean = true
 
@@ -127,6 +135,19 @@ object ListIRs extends Base {
 
   }
 
+  case class List$plus[A](self : Rep[List[A]], that : Rep[A])(implicit val typeA : TypeRep[A]) extends FunctionDef[List[A]](Some(self), "+", List(List(that))){
+    override def curriedConstructor = (copy[A] _).curried
+    override def isPure = true
+
+    override def partiallyEvaluate(children: Any*): List[A] = {
+      val self = children(0).asInstanceOf[List[A]]
+      val that = children(1).asInstanceOf[A]
+      self.$plus(that)
+    }
+    override def partiallyEvaluable: Boolean = true
+
+  }
+
   case class List_Field_Data[A](self : Rep[List[A]])(implicit val typeA : TypeRep[A]) extends FieldDef[Seq[A]](self, "data"){
     override def curriedConstructor = (copy[A] _)
     override def isPure = true
@@ -139,8 +160,12 @@ object ListIRs extends Base {
 
   }
 
-  case class ListApplyObject[A](dataOutput : Rep[Seq[A]])(implicit val typeA : TypeRep[A]) extends FunctionDef[List[A]](None, "List.apply", List(List(__varArg(dataOutput)))){
+  case class ListApplyObject1[A](dataOutput : Rep[Seq[A]])(implicit val typeA : TypeRep[A]) extends FunctionDef[List[A]](None, "List.apply", List(List(__varArg(dataOutput)))){
     override def curriedConstructor = (copy[A] _)
+  }
+
+  case class ListApplyObject2[A]()(implicit val typeA : TypeRep[A]) extends FunctionDef[List[A]](None, "List.apply", List(List()), List(typeA)){
+    override def curriedConstructor = (x: Any) => copy[A]()
   }
 
   case class ListZipObject[A, B](as : Rep[List[A]], bs : Rep[List[B]])(implicit val typeA : TypeRep[A], val typeB : TypeRep[B]) extends FunctionDef[List[Tuple2[A, B]]](None, "List.zip", List(List(as,bs))){
@@ -202,13 +227,23 @@ object ListQuasiNodes extends BaseExtIR {
       paramA.define(t.typeA)
       r }
   }
+  case class List$plusExt[A](self : Rep[List[A]], that : Rep[A])(implicit val paramA : MaybeParamTag[A]) extends FunctionDef[List$plus[A], List[A]] {
+    override def nodeUnapply(t: List$plus[A]): Option[Product] = (List$plus.unapply(t): Option[Product]) map { r =>
+      paramA.define(t.typeA)
+      r }
+  }
   case class List_Field_DataExt[A](self : Rep[List[A]])(implicit val paramA : MaybeParamTag[A]) extends FunctionDef[List_Field_Data[A], Seq[A]] {
     override def nodeUnapply(t: List_Field_Data[A]): Option[Product] = (List_Field_Data.unapply(t): Option[Product]) map { r =>
       paramA.define(t.typeA)
       r }
   }
-  case class ListApplyObjectExt[A](dataOutput : Rep[Seq[A]])(implicit val paramA : MaybeParamTag[A]) extends FunctionDef[ListApplyObject[A], List[A]] {
-    override def nodeUnapply(t: ListApplyObject[A]): Option[Product] = (ListApplyObject.unapply(t): Option[Product]) map { r =>
+  case class ListApplyObject1Ext[A](dataOutput : Rep[Seq[A]])(implicit val paramA : MaybeParamTag[A]) extends FunctionDef[ListApplyObject1[A], List[A]] {
+    override def nodeUnapply(t: ListApplyObject1[A]): Option[Product] = (ListApplyObject1.unapply(t): Option[Product]) map { r =>
+      paramA.define(t.typeA)
+      r }
+  }
+  case class ListApplyObject2Ext[A]()(implicit val paramA : MaybeParamTag[A]) extends FunctionDef[ListApplyObject2[A], List[A]] {
+    override def nodeUnapply(t: ListApplyObject2[A]): Option[Product] = (ListApplyObject2.unapply(t): Option[Product]) map { r =>
       paramA.define(t.typeA)
       r }
   }
@@ -231,12 +266,14 @@ trait ListExtOps extends BaseExt with NumericExtOps with Tuple2ExtOps with SeqEx
   implicit class ListRep[A](self : Rep[List[A]])(implicit paramA : MaybeParamTag[A]) {
      def map[B](f : Rep[(A => B)])(implicit paramB : MaybeParamTag[B]) : Rep[List[B]] = listMap[A, B](self, f)(paramA, paramB)
      def filter(f : Rep[(A => Boolean)]) : Rep[List[A]] = listFilter[A](self, f)(paramA)
-     def fold[B](init : Rep[B])(f : Rep[((B,A) => B)])(implicit paramB : MaybeParamTag[B]) : Rep[B] = listFold[A, B](self, init, f)(paramA, paramB)
+     def fold[B](init : Rep[B], f : Rep[((B,A) => B)])(implicit paramB : MaybeParamTag[B]) : Rep[B] = listFold[A, B](self, init, f)(paramA, paramB)
      def size : Rep[Int] = listSize[A](self)(paramA)
+     def +(that : Rep[A]) : Rep[List[A]] = list$plus[A](self, that)(paramA)
      def data : Rep[Seq[A]] = list_Field_Data[A](self)(paramA)
   }
   object List {
-     def apply[A](data : Rep[A]*)(implicit paramA : MaybeParamTag[A]) : Rep[List[A]] = listApplyObject[A](data:_*)(paramA)
+     def apply[A](data : Rep[A]*)(implicit overload1 : Overloaded1, paramA : MaybeParamTag[A]) : Rep[List[A]] = listApplyObject1[A](data:_*)(paramA)
+     def apply[A]()(implicit overload2 : Overloaded2, paramA : MaybeParamTag[A]) : Rep[List[A]] = listApplyObject2[A]()(paramA)
      def zip[A, B](as : Rep[List[A]], bs : Rep[List[B]])(implicit paramA : MaybeParamTag[A], paramB : MaybeParamTag[B]) : Rep[List[Tuple2[A, B]]] = listZipObject[A, B](as, bs)(paramA, paramB)
   }
   // constructors
@@ -248,11 +285,13 @@ trait ListExtOps extends BaseExt with NumericExtOps with Tuple2ExtOps with SeqEx
    def listFilter[A](self : Rep[List[A]], f : Rep[((A) => Boolean)])(implicit paramA : MaybeParamTag[A]) : Rep[List[A]] = ListFilterExt[A](self, f)
    def listFold[A, B](self : Rep[List[A]], init : Rep[B], f : Rep[((B,A) => B)])(implicit paramA : MaybeParamTag[A], paramB : MaybeParamTag[B]) : Rep[B] = ListFoldExt[A, B](self, init, f)
    def listSize[A](self : Rep[List[A]])(implicit paramA : MaybeParamTag[A]) : Rep[Int] = ListSizeExt[A](self)
+   def list$plus[A](self : Rep[List[A]], that : Rep[A])(implicit paramA : MaybeParamTag[A]) : Rep[List[A]] = List$plusExt[A](self, that)
    def list_Field_Data[A](self : Rep[List[A]])(implicit paramA : MaybeParamTag[A]) : Rep[Seq[A]] = List_Field_DataExt[A](self)
-   def listApplyObject[A](data : Rep[A]*)(implicit paramA : MaybeParamTag[A]) : Rep[List[A]] = {
+   def listApplyObject1[A](data : Rep[A]*)(implicit paramA : MaybeParamTag[A]) : Rep[List[A]] = {
       val dataOutput = __liftSeq(data.toSeq)
-      ListApplyObjectExt[A](dataOutput)
+      ListApplyObject1Ext[A](dataOutput)
     }
+   def listApplyObject2[A]()(implicit paramA : MaybeParamTag[A]) : Rep[List[A]] = ListApplyObject2Ext[A]()
    def listZipObject[A, B](as : Rep[List[A]], bs : Rep[List[B]])(implicit paramA : MaybeParamTag[A], paramB : MaybeParamTag[B]) : Rep[List[Tuple2[A, B]]] = ListZipObjectExt[A, B](as, bs)
   type List[A] = mylib.shallow.List[A]
 }

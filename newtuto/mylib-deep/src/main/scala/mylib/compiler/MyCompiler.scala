@@ -9,7 +9,7 @@ import sc.pardis.optimization._
 import sc.pardis.compiler._
 import deep._
 
-class MyCompiler(val DSL: MyLibDSL, name: String, offlineOptim: Boolean = false, lowering: Boolean = false) extends Compiler[MyLibDSL] {
+class MyCompiler(val DSL: MyLibDSL, name: String, offlineOptim: Boolean = false, lowering: Int = 0) extends Compiler[MyLibDSL] {
   
   // Pipeline Definition:
   
@@ -19,28 +19,41 @@ class MyCompiler(val DSL: MyLibDSL, name: String, offlineOptim: Boolean = false,
     
     pipeline += PartiallyEvaluate  // used to crash... for some reason... <- needs DCE to run before!
     
-    pipeline += new Optim.Offline(DSL)
+    //pipeline += new Optim.Offline.HighLevel(DSL)
+    pipeline += new Optim.HighLevel(DSL)
+    pipeline += new Optim.Generic(DSL)
     
     pipeline += DCE
     
   }
   
-  if (lowering) {
+  if (lowering > 0) {
     
-    pipeline += new Lowering(DSL)
+    pipeline += new ListLowering(DSL)
     
     pipeline += DCE
+    
+    if (lowering > 1) {
+      
+      pipeline += new ArrBufLowering(DSL)
+      
+      pipeline += DCE
+      
+    }
     
     if (offlineOptim) {
       
       pipeline += PartiallyEvaluate
       
-      pipeline += new Optim.Offline(DSL)
+      //pipeline += new Optim.Offline.Generic(DSL)
+      pipeline += new Optim.Generic(DSL)
       
       pipeline += DCE
       
     }
+    
   }
+  
   
   // Outputting Scala code inside an executable wrapper:
   
