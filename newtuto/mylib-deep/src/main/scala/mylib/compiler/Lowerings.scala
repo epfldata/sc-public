@@ -85,13 +85,12 @@ class ListLowering(override val IR: MyLibDSL) extends sc.pardis.optimization.Rec
       code: Rep[_]
       
     case dsl"(${ArrFromLs(arr)}: List[A]).fold[B]($init, $f)" =>
-      val code = dsl"""
-         val r = new ArrayBuffer[A]()
+      def code = dsl"""
          var acc = $init
          for (x <- $arr) acc = $f(acc,x)
-         r
+         acc
       """
-      code: Rep[_]
+      block(code): Rep[_]
       
     //// Unnecessary:
     //case dsl"(${ArrFromLs(arr)}: List[A]).size" =>
@@ -99,13 +98,13 @@ class ListLowering(override val IR: MyLibDSL) extends sc.pardis.optimization.Rec
     
     //case dsl"(${ArrFromLs(arr)}: List[A]).as($ls) + ($x)" =>
     case dsl"(${ArrFromLs(arr)}: List[A]) + ($x)" =>
-      val code = dsl"""
+      def code = dsl"""
         val r = new ArrayBuffer[A]($arr.size)
         for (x <- $arr) r append x
         r append $x
         r
       """
-      code: Rep[_]
+      block(code): Rep[_]
     
     case dsl"shallow.List.zip[A,B] (${ArrFromLs(xs)}, ${ArrFromLs(ys)})" =>
       //  val n = $xs.size max $ys.size  // Int's mirror does not expose Size
@@ -134,6 +133,12 @@ class ListLowering(override val IR: MyLibDSL) extends sc.pardis.optimization.Rec
   }
   
   def max(a: Rep[Int], b: Rep[Int]): Rep[Int] = dsl"if ($a > $b) $a else $b"
+  
+  /** Use to reify blocks for more legibility of generated code */
+  def block[T](x: => Rep[T]) = {
+    //reifyBlock(x)
+    x
+  }
   
 }
 

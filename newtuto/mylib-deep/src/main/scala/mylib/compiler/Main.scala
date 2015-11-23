@@ -44,7 +44,7 @@ object Main extends App {
     List zip (ls, indices._1)
   """
   
-  def pgrm = pgrmA
+  def pgrm = pgrmC
   
   {
     import Context._  // needed to provide the `compile` methods with an implicit TypeRep
