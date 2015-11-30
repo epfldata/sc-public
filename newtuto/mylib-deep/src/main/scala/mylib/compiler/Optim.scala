@@ -24,8 +24,7 @@ object Optim {
       
       // Replacing size on list constructors by a literal
       rewrite += symRule {
-        //case dsl"shallow.List[A](${IR.Def(PardisLiftedSeq( xs ))}:_*).size" => dsl"${xs.size}": Rep[_] // doesn't work (why?)
-        case dsl"shallow.List[A](${IR.Def(PardisLiftedSeq( xs ))}:_*).size" => lift(xs.size): Rep[_]
+        case dsl"shallow.List[A](.*$xs).size" => lift(xs.size)   // dsl"${xs.size}" // doesn't work (why?)
       }
       
       // Optimizing chained map applications; you can check it works by commenting the one in `Online`

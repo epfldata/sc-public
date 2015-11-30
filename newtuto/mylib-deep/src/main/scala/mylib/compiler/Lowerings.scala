@@ -24,41 +24,29 @@ class ListLowering(override val IR: MyLibDSL) extends sc.pardis.optimization.Rec
   // Replacing List construction
   rewrite += symRule {
 
-    //case dsl"shallow.List[A](..$args)" => // TODO implement syntax
-    case dsl"shallow.List[A](${IR.Def(PardisLiftedSeq( xs ))}:_*)" =>
-      //reifyBlock {  // to put the statements in a block -- not necessary here
-      val buffer = dsl"new ArrayBuffer[A](${unit(xs.size)})"
-      for (x <- xs) dsl"$buffer append $x"
-      buffer : Rep[_]
+    case dsl"shallow.List[A](.*$xs)" =>
+      block {
+        val buffer = dsl"new ArrayBuffer[A](${unit(xs.size)})"
+        for (x <- xs) dsl"$buffer append $x"
+        buffer
+      }
       
     case dsl"shallow.List[A]()" =>
-      dsl"new ArrayBuffer[A]()" : Rep[_]
+      dsl"new ArrayBuffer[A]()"
     
   }
-  
-  //// Inlines size's implementation -- DOES NOT WORK
-  //rewrite += symRule {
-  //  case dsl"($ls: List[A]).size" =>
-  //    listSize(ls)
-  //}
   
   // Replacing map
   rewrite += symRule {
     
-    //// The following WON'T work:
-    //case dsl"($ls: List[A]).map[B]($f)" =>
-    //case dsl"($ls: ArrayBuffer[A]).map($f: A => B)" =>
-    //  val arr = ls.asInstanceOf[Rep[ArrayBuffer[A]]] 
-    
     case dsl"(${ArrFromLs(arr)}: List[A]).map($f: A => B)" =>
-      val code = dsl"""
+      dsl"""
         val r = new ArrayBuffer[B]()
         for (x <- $arr) r append $f(x)
         r
       """
-      code: Rep[_]
       
-    //// NOTE: this does NOT work
+    //// NOTE: this works ('fold' is in turn transformed by this recursive transformer)
     //case dsl"($ls: List[A]).map($f: A => B)" =>
     //  val code = dsl"$ls.fold(shallow.List[B](), (ls:List[B], e:A) => ls + $f(e))"
     //  code: Rep[_]
@@ -68,46 +56,38 @@ class ListLowering(override val IR: MyLibDSL) extends sc.pardis.optimization.Rec
   // Replace map/filter, filter, fold, zip and +
   rewrite += symRule {
     
+    // problematic: will leave the 'map' effectful nodes (because 'map' is processed before)
     case dsl"(${ArrFromLs(arr)}: List[A]).map($f: A => B).filter($g: B => Boolean)" =>
-      val code = dsl"""
+      dsl"""
         val r = new ArrayBuffer[B]()
         for (x <- $arr) { val e = $f(x); if($g(e)) r append e }
         r
       """
-      code: Rep[_]
     
     case dsl"(${ArrFromLs(arr)}: List[A]).filter($f: A => Boolean)" =>
-      val code = dsl"""
+      dsl"""
         val r = new ArrayBuffer[A]()
         for (x <- $arr) if($f(x)) r append x
         r
       """
-      code: Rep[_]
       
     case dsl"(${ArrFromLs(arr)}: List[A]).fold[B]($init, $f)" =>
-      def code = dsl"""
+      block(dsl"""
          var acc = $init
          for (x <- $arr) acc = $f(acc,x)
          acc
-      """
-      block(code): Rep[_]
+      """)
       
-    //// Unnecessary:
-    //case dsl"(${ArrFromLs(arr)}: List[A]).size" =>
-    //  dsl"$arr.size": Rep[_]
-    
-    //case dsl"(${ArrFromLs(arr)}: List[A]).as($ls) + ($x)" =>
-    case dsl"(${ArrFromLs(arr)}: List[A]) + ($x)" =>
-      def code = dsl"""
+    case dsl"(${ArrFromLs(arr)}: List[A]) + $x" =>
+      block(dsl"""
         val r = new ArrayBuffer[A]($arr.size)
         for (x <- $arr) r append x
         r append $x
         r
-      """
-      block(code): Rep[_]
+      """)
     
     case dsl"shallow.List.zip[A,B] (${ArrFromLs(xs)}, ${ArrFromLs(ys)})" =>
-      //  val n = $xs.size max $ys.size  // Int's mirror does not expose Size
+      //  val n = $xs.size max $ys.size  // Int's mirror does not expose 'max'
       val code = dsl"""
         val n = ${max(xs.size, ys.size)}: Int
         val r = new ArrayBuffer[(A,B)](n)
