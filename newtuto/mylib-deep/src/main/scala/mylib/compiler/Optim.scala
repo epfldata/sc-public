@@ -6,6 +6,7 @@ import ch.epfl.data.sc.pardis.deep.scalalib.NumericOps
 import ch.epfl.data.sc.pardis.ir.{ PardisLiftedSeq }
 import ch.epfl.data.sc.pardis.quasi.TypeParameters._
 import mylib.deep.{ListComponent, MyLibDSL}
+import sc.pardis.optimization.RecursiveRuleBasedTransformer
 
 import shallow._
 
@@ -13,7 +14,7 @@ object Optim {
   
   //object Offline {
     
-    class HighLevel(override val IR: MyLibDSL) extends sc.pardis.optimization.RecursiveRuleBasedTransformer[MyLibDSL](IR) {
+    class HighLevel(override val IR: MyLibDSL) extends RecursiveRuleBasedTransformer[MyLibDSL](IR) {
       val params = newTypeParams('A,'B,'C); import params._
       import IR._
       
@@ -24,7 +25,7 @@ object Optim {
       
       // Replacing size on list constructors by a literal
       rewrite += symRule {
-        case dsl"shallow.List[A](.*$xs).size" => lift(xs.size)   // dsl"${xs.size}" // doesn't work (why?)
+        case dsl"shallow.List(.*$xs).size" => lift(xs.size)   // dsl"${xs.size}" // doesn't work (why?)
       }
       
       // Optimizing chained map applications; you can check it works by commenting the one in `Online`
@@ -43,7 +44,7 @@ object Optim {
       
     }
     
-    class Generic(override val IR: MyLibDSL) extends sc.pardis.optimization.RecursiveRuleBasedTransformer[MyLibDSL](IR) {
+    class Generic(override val IR: MyLibDSL) extends RecursiveRuleBasedTransformer[MyLibDSL](IR) {
       val params = newTypeParams('A,'B); import params._
       
       // Reduction of redexes (inlining calls to lambdas)
