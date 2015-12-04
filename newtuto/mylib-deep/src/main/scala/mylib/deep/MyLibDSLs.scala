@@ -1,11 +1,7 @@
 package mylib.deep
 
-import ch.epfl.data.sc.pardis.deep.scalalib.collection.RichIntOps
-import ch.epfl.data.sc.pardis.deep.scalalib.{Tuple3ExtOps, Tuple3Ops}
-import ch.epfl.data.sc.pardis.deep.{DSLExtOpsClass, DSLExpOpsClass}
-import mylib.compiler.Optim
+import ch.epfl.data.sc.pardis.quasi.anf.{BaseQuasiExp, BaseQuasiExt}
 
-class MyLibDSL extends DSLExpOpsClass with RichIntOps with Tuple3Ops with ListOps with Optim.Online
+class MyLibDSLOps extends MyLibOps with BaseQuasiExp
 
-class MyLibDSLExt extends DSLExtOpsClass /*with RichIntExtOps*/ with Tuple3ExtOps with ListExtOps
-
+class MyLibDSLExtOps extends MyLibExtOps with BaseQuasiExt

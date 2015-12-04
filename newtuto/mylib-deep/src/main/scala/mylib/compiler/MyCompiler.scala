@@ -9,7 +9,7 @@ import sc.pardis.optimization._
 import sc.pardis.compiler._
 import deep._
 
-class MyCompiler(val DSL: MyLibDSL, name: String, offlineOptim: Boolean = false, lowering: Int = 0) extends Compiler[MyLibDSL] {
+class MyCompiler(val DSL: MyLibDSLOps, name: String, offlineOptim: Boolean = false, lowering: Int = 0) extends Compiler[MyLibDSLOps] {
   
   // Pipeline Definition:
   
@@ -59,7 +59,7 @@ class MyCompiler(val DSL: MyLibDSL, name: String, offlineOptim: Boolean = false,
   
   import sc.pardis.prettyprinter._
   
-  val codeGenerator = new ScalaCodeGenerator with ASTCodeGenerator[MyLibDSL] {
+  val codeGenerator = new ScalaCodeGenerator with ASTCodeGenerator[MyLibDSLOps] {
     val IR = DSL
     import sc.pardis.utils.document.Document
     override def getHeader(): Document = s"""

@@ -4,7 +4,7 @@ package shallow
 import ch.epfl.data.sc.pardis.annotations._
 
 @deep
-@quasi
+@deepExt
 @needs[Numeric[_] :: (_,_) :: Seq[_]]
 @noImplementation // TODO why needed?
 class List[A](val data: Seq[A]) { // TODO name it something else to avoid confusions with scala.List
