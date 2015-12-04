@@ -1,22 +1,24 @@
 package mylib
 package compiler
 
+import scala.collection.mutable.ArrayBuffer
+
 import ch.epfl.data.sc
-import ch.epfl.data.sc.pardis.ir.{PardisLiftedSeq}
-import ch.epfl.data.sc.pardis.quasi.TypeParameters._
-import mylib.deep.{ListComponent, MyLibDSL}
-import ch.epfl.data.sc.pardis.types.PardisTypeImplicits._
+import sc.pardis.optimization.RecursiveRuleBasedTransformer
+import sc.pardis.quasi.TypeParameters._
 
-import sc.pardis.shallow.scalalib
+import mylib.deep.MyLibDSL
+import mylib.shallow._  
 
-class ListLowering(override val IR: MyLibDSL) extends sc.pardis.optimization.RecursiveRuleBasedTransformer[MyLibDSL](IR) {
+class ListLowering(override val IR: MyLibDSL) extends RecursiveRuleBasedTransformer[MyLibDSL](IR) {
   
   val params = newTypeParams('A,'B,'C); import params._
   
-  import IR._  
+  import IR.Predef._
   
+  // Required to tell SC what type tranformations are being performed
   override def transformType[T](implicit tp: TypeRep[T]): TypeRep[Any] = tp match {
-    case lst: ListType[t] => ArrayBufferType[t](lst.typeA)
+    case lst: IR.ListType[t] => IR.ArrayBufferType[t](lst.typeA)
         .asInstanceOf[TypeRep[Any]]
     case _ => super.transformType(tp)
   }
@@ -24,7 +26,7 @@ class ListLowering(override val IR: MyLibDSL) extends sc.pardis.optimization.Rec
   // Replacing List construction
   rewrite += symRule {
 
-    case dsl"shallow.List[A](.*$xs)" =>
+    case dsl"shallow.List[A]($xs*)" =>
       block {
         val buffer = dsl"new ArrayBuffer[A](${unit(xs.size)})"
         for (x <- xs) dsl"$buffer append $x"
@@ -46,11 +48,13 @@ class ListLowering(override val IR: MyLibDSL) extends sc.pardis.optimization.Rec
         r
       """
       
-    //// NOTE: this works ('fold' is in turn transformed by this recursive transformer)
-    //case dsl"($ls: List[A]).map($f: A => B)" =>
-    //  val code = dsl"$ls.fold(shallow.List[B](), (ls:List[B], e:A) => ls + $f(e))"
-    //  code: Rep[_]
-      
+    /*
+    // NOTE: this works ('fold' is in turn transformed by this recursive transformer)
+    case dsl"($ls: List[A]).map($f: A => B)" =>
+      val code = dsl"$ls.fold(shallow.List[B](), (ls:List[B], e:A) => ls + $f(e))"
+      code: Rep[_]
+    */
+    
   }
   
   // Replace map/filter, filter, fold, zip and +
@@ -85,16 +89,17 @@ class ListLowering(override val IR: MyLibDSL) extends sc.pardis.optimization.Rec
         r append $x
         r
       """)
-    
+      
     case dsl"shallow.List.zip[A,B] (${ArrFromLs(xs)}, ${ArrFromLs(ys)})" =>
+      // TODO: fix:  for (i <- 0 until n) r append ( ($xs(i), $ys(i)) )
+      
       //  val n = $xs.size max $ys.size  // Int's mirror does not expose 'max'
-      val code = dsl"""
-        val n = ${max(xs.size, ys.size)}: Int
+      dsl"""
+        val n = ${max( dsl"$xs.size", dsl"$ys.size" )}
         val r = new ArrayBuffer[(A,B)](n)
-        for (i <- scala.Range(0, n)) r append ( ($xs(i), $ys(i)) )
+        for (i <- Range(0, n)) r append ( ($xs(i), $ys(i)) )
         r
       """
-      code: Rep[_]
       
   }
   //}
@@ -122,11 +127,11 @@ class ListLowering(override val IR: MyLibDSL) extends sc.pardis.optimization.Rec
   
 }
 
-class ArrBufLowering(override val IR: MyLibDSL) extends sc.pardis.optimization.RecursiveRuleBasedTransformer[MyLibDSL](IR) {
+class ArrBufLowering(override val IR: MyLibDSL) extends RecursiveRuleBasedTransformer[MyLibDSL](IR) {
   
   val params = newTypeParams('A,'B,'C); import params._
   
-  import IR._
+  import IR.Predef._
   
   
   // Replacing foreach

@@ -1,13 +1,12 @@
 package mylib
 package compiler
 
-import ch.epfl.data.sc
-import ch.epfl.data.sc.pardis.deep.scalalib.NumericOps
-import ch.epfl.data.sc.pardis.ir.{ PardisLiftedSeq }
-import ch.epfl.data.sc.pardis.quasi.TypeParameters._
-import mylib.deep.{ListComponent, MyLibDSL}
-import sc.pardis.optimization.RecursiveRuleBasedTransformer
+import ch.epfl.data.sc.pardis  
+import pardis.deep.scalalib.NumericOps
+import pardis.quasi.TypeParameters._
+import pardis.optimization.RecursiveRuleBasedTransformer
 
+import mylib.deep.{ListComponent, MyLibDSL}
 import shallow._
 
 object Optim {
@@ -16,31 +15,33 @@ object Optim {
     
     class HighLevel(override val IR: MyLibDSL) extends RecursiveRuleBasedTransformer[MyLibDSL](IR) {
       val params = newTypeParams('A,'B,'C); import params._
-      import IR._
+      import IR.Predef._
       
-      //// Replacing size on singleton lists by literal 1
-      //rewrite += symRule {
-      //  case dsl"List($_).size" => dsl"1": Rep[_]
-      //}
+      /*
+      // Replacing size on singleton lists by literal 1
+      rewrite += symRule {
+        case dsl"List($_).size" => dsl"1": Rep[_]
+      }
+      */
       
       // Replacing size on list constructors by a literal
       rewrite += symRule {
-        case dsl"shallow.List(.*$xs).size" => lift(xs.size)   // dsl"${xs.size}" // doesn't work (why?)
+        case dsl"List($xs*).size" => unit(xs.size)   // dsl"${xs.size}" // doesn't work (why?)
       }
       
       // Optimizing chained map applications; you can check it works by commenting the one in `Online`
       rewrite += rule {
         case dsl"($ls: List[A]).map($f: A => B).map($g: B => C)" =>
-          dsl"($ls).map(x => $g($f(x)))": Rep[_]
+          dsl"($ls).map(x => $g($f(x)))" //: IR.Rep[_]
       }
       
       // Optimizing chained filter applications
       rewrite += rule {
         case dsl"($ls: List[A]).filter($f: A => Boolean).filter($g: A => Boolean)" =>
-          dsl"($ls).filter(x => $f(x) && $g(x))": Rep[_]
+          dsl"($ls).filter(x => $f(x) && $g(x))" //: IR.Rep[_]
       }
       
-      // Note that optimizing chained map/filter needs a lowering
+      // Note that optimizing chained map/filter needs a lowering, or to convert it to fold
       
     }
     
