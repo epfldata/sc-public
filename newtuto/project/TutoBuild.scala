@@ -6,13 +6,13 @@ import ch.epfl.data.sc.purgatory.plugin.PurgatoryPlugin._
 
 object TutoBuild extends Build {
   
-  // TODO factor settings
+  val SCVersion = "0.1.0-SNAPSHOT"
   
   def defaultSettings = Defaults.coreDefaultSettings ++ Seq(
       scalaVersion := "2.11.7",
       resolvers += Resolver.sonatypeRepo("snapshots"),
       libraryDependencies ++= Seq(
-        "ch.epfl.data" % "sc-pardis-compiler_2.11" % "0.1-SNAPSHOT",
+        "ch.epfl.data" % "sc-pardis-compiler_2.11" % SCVersion,
         "ch.epfl.lamp" % "scala-yinyang_2.11" % "0.2.0-SNAPSHOT"
       )/*,
       scalacOptions in Test ++= Seq("-optimize")*/
@@ -20,13 +20,13 @@ object TutoBuild extends Build {
   
   lazy val mylib = Project(id = "mylib", base = file("."), settings = defaultSettings ++ Seq(
       
-      libraryDependencies += "ch.epfl.data" % "sc-pardis-quasi_2.11" % "0.1-SNAPSHOT"
+      libraryDependencies += "ch.epfl.data" % "sc-pardis-quasi_2.11" % SCVersion
       
     ) ++
     // Purgatory settings:
     generatorSettings  ++ Seq(
         generatePlugins += "ch.epfl.data.sc.purgatory.generator.QuasiGenerator",
-        pluginLibraries += "ch.epfl.data" % "sc-purgatory-quasi_2.11" % "0.1-SNAPSHOT",
+        pluginLibraries += "ch.epfl.data" % "sc-purgatory-quasi_2.11" % SCVersion,
   
         outputFolder := "mylib-deep/src/main/scala/mylib/deep",
         inputPackage := "mylib.shallow",
