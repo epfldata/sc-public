@@ -75,6 +75,9 @@ The following shows how we annotated one method of our `List` DSL:
 def map[B](f: A => B): List[B] = ...
 ```
 
+**Remark**: From a theoretical point of view, `map` is only conditionally pure, i.e., it is only pure if the function argument `f` it is passed is also pure.
+If you know, however, that no impure functions may be passed to `map` in the context of your DSL, you may still mark it `@pure`.
+
 
 ### Recommended SBT Configuration
 
@@ -187,7 +190,7 @@ object MyCompiler extends Compiler[MyLibDSL] {
 Offline analysis and rewrite rules can be written in the following general syntax:
 
 ```scala
-class MyTransformer extends ... {
+class MyTransformer extends RuleBasedTransformer {
     analysis += rule {
       case dsl" .. to match .. " => // store gathered information
     }
@@ -208,40 +211,60 @@ To do so, it matches program fragments of the form `List(x).size` (where `x` cou
 import sc.pardis.optimization.RecursiveRuleBasedTransformer
 
 class MyTransformer(DSL: MyLibDSL) extends RecursiveRuleBasedTransformer[MyLibDSL](DSL) {  
-  rewrite += rule { case dsl"List($x).size" => dsl"1" }
+  rewrite += rule {
+    case dsl"List($x).size" => dsl"1"
+  }
 }
 ```
 
-In the body of the transformation above, the extracted variable `x` has type `Rep[?A]`, where `?A` is a type generated automatically by quasiquotes representing the (unknown) type of the constructed list's elements. We could also specify the type explicitly 
-`dsl"List[Int]($x).size"`, in  which case `x` would have had type `Rep[Int]`.
+In the body of the transformation above, the extracted variable `x` has type `Rep[?A]`, where `?A` is a type generated automatically by the quasiquote engine, representing the (unknown) type of the constructed list's elements. We could also specify the type explicitly, as in
+`case dsl"List[Int]($x).size"`, in  which case `x` would have had type `Rep[Int]`.
 
-**Caveat**: in its current implementation, quasiquotation will not check that the type of an extracted object will match the concrete type specified, so extarctor `dsl"List[Int]($x)` could extract a `List[String]`, and the type of `x` would be lying. (This will be corrected in the future.)
+**Caveat**: in its current implementation, quasiquotation will not check that the type of an extracted object matches the concrete type specified, so extarctor `dsl"List[Int]($x)` could extract a `List[String]`, and the type of `x` would be lying. (This will be corrected in the future.)
 
-Note that a manual approach can be used to define the transformation, without using quasiquotes and by manipulating IR nodes directly. However, this is out of the scope os this tutorial.
+Note that a manual approach can be used to define the transformation, ie: without using quasiquotes and by manipulating IR nodes directly.
+However, this requires special knowledge about the compiler's internal details, and is out of the scope of this tutorial.
+Quasiquotes should be enough for most use cases.
 
 
 ### Generalizing the `size` Optimization
 
 In order to generalize that `size` optimization to any list size, we can use the vararg extraction syntax of quasiquotes:
 ```scala
-  rewrite += rule {
-    case dsl"shallow.List(.*$xs).size" => lift(xs.size)
-  }
+  import IR.Predef._
+  rewrite += rule {  case dsl"List($xs*).size" => unit(xs.size)  }
 ```
 
 In the code above, `xs` has type `Seq[Rep[A]]`, because it will match any actual list of arguments passed to the `List` constructor.
-Notice the `lift` call, that takes a plain `Int` object and returns a `Rep[Int]`, as a transformation is expected to return a value of type `Rep[_]`.
+Notice the call to `unit` (from `IR.Predef`), that takes a plain `Int` object and returns a `Rep[Int]` (of underlying class `Constant[Int]`). It is necessary, since a transformation is expected to return a value of type `Rep[_]`.
+This function expects an argument with the `TypeRep` type class; in our case, it expects an implicit value of type `TypeRep[Int]`. This value is also imported from `IR.Predef`. Other related implicits can be found in `sc.pardis.types.PardisTypeImplicits`.
 
 
 ### Explicitly Polymorphic Transformations
 
-[TODO]
+It is often useful to be able to refer to the (unknown) types found in a pattern-matched expression. In addition, quasiquotes will not always be able to generate existential types (like `?A` above), and may need help to typecheck the quasiquoted expressions.
+
+For this purpose, SC provides a macro `newTypeParams` that generates types which purpose is to be used for extraction and construction of expressions through quasiquotes.
+It is used as follows:
+
+```scala
+val params = newTypeParams('A, 'B, 'C); import params._
+rewrite += rule {
+  case dsl"($ls: List[A]).map($f: A => B).map($g: B => C)" =>
+    f : Rep[A => B]  // typechecks
+    dsl"($ls).map(x => $g($f(x)))"
+}
+```
+
+Notice how we don't need to specify the types again in the construction of the new expression. Scala infers all types for us in this context, i.e. as if we had written
+`dsl"($ls: List[A]).map[C]((x: A) => $g($f(x)))"`.
 
 
 
----
+**Caveat**: Because of limitations in what extractor macros can do (and because we need to propagate implicit type representations from the extraction to the construction of expressions), the `newTypeParams` macro relies on some shared state (instantiated with its resulting object). For this reason, one should never share type parameters generated through this macro across transformations that may apply concurrently. For example, in an extraction of the form `case dsl"XXX" => x match { case dsl"YYY" => ... }`, the extractor `YYY` should use type parameters distinct from the ones used in `XXX`.
+This also means that recursive extractors should define their `newTypeParams` parameters locally (so each recursive invocation has a distinct state).
 
-[TODO] more advanced example: map.map -> map (polymorphic)
+
 
 
 
