@@ -32,13 +32,13 @@ object Optim {
       // Optimizing chained map applications; you can check it works by commenting the one in `Online`
       rewrite += rule {
         case dsl"($ls: List[A]).map($f: A => B).map($g: B => C)" =>
-          dsl"($ls).map(x => $g($f(x)))" //: IR.Rep[_]
+          dsl"($ls).map(x => $g($f(x)))"
       }
       
       // Optimizing chained filter applications
       rewrite += rule {
         case dsl"($ls: List[A]).filter($f: A => Boolean).filter($g: A => Boolean)" =>
-          dsl"($ls).filter(x => $f(x) && $g(x))" //: IR.Rep[_]
+          dsl"($ls).filter(x => $f(x) && $g(x))"
       }
       
       // Note that optimizing chained map/filter needs a lowering, or to convert it to fold
