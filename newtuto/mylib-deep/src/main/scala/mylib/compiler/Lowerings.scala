@@ -7,10 +7,13 @@ import ch.epfl.data.sc
 import sc.pardis.optimization.RecursiveRuleBasedTransformer
 import sc.pardis.quasi.TypeParameters._
 
-import mylib.deep.MyLibDSL
+import mylib.deep.MyLibDSLOps
 import mylib.shallow._  
 
-class ListLowering(override val IR: MyLibDSL) extends RecursiveRuleBasedTransformer[MyLibDSL](IR) {
+
+class ListLowering(override val IR: MyLibDSLOps) extends RecursiveRuleBasedTransformer[MyLibDSLOps](IR) {
+  
+  implicit val ctx = IR // for quasiquotes
   
   val params = newTypeParams('A,'B,'C); import params._
   
@@ -95,7 +98,7 @@ class ListLowering(override val IR: MyLibDSL) extends RecursiveRuleBasedTransfor
       
       //  val n = $xs.size max $ys.size  // Int's mirror does not expose 'max'
       dsl"""
-        val n = ${max( dsl"$xs.size", dsl"$ys.size" )}
+        val n: Int = ${max( dsl"$xs.size", dsl"$ys.size" )}
         val r = new ArrayBuffer[(A,B)](n)
         for (i <- Range(0, n)) r append ( ($xs(i), $ys(i)) )
         r
@@ -127,7 +130,9 @@ class ListLowering(override val IR: MyLibDSL) extends RecursiveRuleBasedTransfor
   
 }
 
-class ArrBufLowering(override val IR: MyLibDSL) extends RecursiveRuleBasedTransformer[MyLibDSL](IR) {
+class ArrBufLowering(override val IR: MyLibDSLOps) extends RecursiveRuleBasedTransformer[MyLibDSLOps](IR) {
+  
+  implicit val ctx = IR // for quasiquotes
   
   val params = newTypeParams('A,'B,'C); import params._
   

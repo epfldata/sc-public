@@ -1,8 +1,6 @@
 package mylib
 
 import ch.epfl.data.sc.pardis.quasi.engine.QuasiAPI
-import mylib.deep.{MyLibDSLExt, MyLibDSL}
+import mylib.deep.{MyLibDSLExtOps, MyLibDSLOps}
 
-package object compiler extends QuasiAPI[MyLibDSL, MyLibDSLExt]
-
-
+package object compiler extends QuasiAPI[MyLibDSLOps, MyLibDSLExtOps]

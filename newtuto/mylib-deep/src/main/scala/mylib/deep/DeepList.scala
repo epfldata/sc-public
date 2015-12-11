@@ -10,6 +10,10 @@ import pardis.deep._
 import pardis.deep.scalalib._
 import pardis.deep.scalalib.collection._
 import pardis.deep.scalalib.io._
+
+import ch.epfl.data.sc.pardis.quasi.anf.{ BaseExt, BaseExtIR }
+import ch.epfl.data.sc.pardis.quasi.TypeParameters.MaybeParamTag
+
 trait ListOps extends Base with NumericOps with Tuple2Ops with SeqOps {  
   // Type representation
   val ListType = ListIRs.ListType
@@ -177,6 +181,8 @@ object ListIRs extends Base {
 trait ListImplicits extends ListOps { 
   // Add implicit conversions here!
 }
+trait ListComponent extends ListOps with ListImplicits {  }
+
 trait ListPartialEvaluation extends ListComponent with BasePartialEvaluation {  
   // Immutable field inlining 
   override def list_Field_Data[A](self : Rep[List[A]])(implicit typeA : TypeRep[A]) : Rep[Seq[A]] = self match {
@@ -187,12 +193,9 @@ trait ListPartialEvaluation extends ListComponent with BasePartialEvaluation {
   // Mutable field inlining 
   // Pure function partial evaluation
 }
-trait ListComponent extends ListOps with ListImplicits {  }
+
 
 // QUASI GENERATED CODE:
-
-import ch.epfl.data.sc.pardis.quasi.anf.{ BaseExt, BaseExtIR }
-import ch.epfl.data.sc.pardis.quasi.TypeParameters.MaybeParamTag
 
 object ListQuasiNodes extends BaseExtIR {
   import ListIRs._
@@ -295,3 +298,5 @@ trait ListExtOps extends BaseExt with NumericExtOps with Tuple2ExtOps with SeqEx
    def listZipObject[A, B](as : Rep[List[A]], bs : Rep[List[B]])(implicit paramA : MaybeParamTag[A], paramB : MaybeParamTag[B]) : Rep[List[Tuple2[A, B]]] = ListZipObjectExt[A, B](as, bs)
   type List[A] = mylib.shallow.List[A]
 }
+
+
