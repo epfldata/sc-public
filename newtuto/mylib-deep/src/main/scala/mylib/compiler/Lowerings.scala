@@ -10,7 +10,10 @@ import sc.pardis.quasi.TypeParameters._
 import mylib.deep.MyLibDSLOps
 import mylib.shallow._  
 
+
 class ListLowering(override val IR: MyLibDSLOps) extends RecursiveRuleBasedTransformer[MyLibDSLOps](IR) {
+  
+  implicit val ctx = IR // for quasiquotes
   
   val params = newTypeParams('A,'B,'C); import params._
   
@@ -128,6 +131,8 @@ class ListLowering(override val IR: MyLibDSLOps) extends RecursiveRuleBasedTrans
 }
 
 class ArrBufLowering(override val IR: MyLibDSLOps) extends RecursiveRuleBasedTransformer[MyLibDSLOps](IR) {
+  
+  implicit val ctx = IR // for quasiquotes
   
   val params = newTypeParams('A,'B,'C); import params._
   
