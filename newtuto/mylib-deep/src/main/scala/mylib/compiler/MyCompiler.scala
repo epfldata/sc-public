@@ -39,6 +39,13 @@ class MyCompiler(val DSL: MyLibDSLOps, name: String, offlineOptim: Boolean = fal
       
       pipeline += DCE
       
+      if (lowering > 2) {
+        
+        pipeline += new CGenLowering(DSL)
+        
+        pipeline += DCE
+        
+      }
     }
     
     if (offlineOptim) {
@@ -59,7 +66,7 @@ class MyCompiler(val DSL: MyLibDSLOps, name: String, offlineOptim: Boolean = fal
   
   import sc.pardis.prettyprinter._
   
-  val codeGenerator = new ScalaCodeGenerator with ASTCodeGenerator[MyLibDSLOps] {
+  val codeGenerator = new ScalaCodeGenerator /*with ASTCodeGenerator[MyLibDSLOps]*/ {
     val IR = DSL
     import sc.pardis.utils.document.Document
     override def getHeader(): Document = s"""

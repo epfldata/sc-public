@@ -46,7 +46,7 @@ class ListLowering(override val IR: MyLibDSLOps) extends RecursiveRuleBasedTrans
     
     case dsl"(${ArrFromLs(arr)}: List[A]).map($f: A => B)" =>
       dsl"""
-        val r = new ArrayBuffer[B]()
+        val r = new ArrayBuffer[B]($arr.size)
         for (x <- $arr) r append $f(x)
         r
       """
@@ -66,14 +66,14 @@ class ListLowering(override val IR: MyLibDSLOps) extends RecursiveRuleBasedTrans
     // problematic: will leave the 'map' effectful nodes (because 'map' is processed before)
     case dsl"(${ArrFromLs(arr)}: List[A]).map($f: A => B).filter($g: B => Boolean)" =>
       dsl"""
-        val r = new ArrayBuffer[B]()
+        val r = new ArrayBuffer[B]($arr.size)
         for (x <- $arr) { val e = $f(x); if($g(e)) r append e }
         r
       """
     
     case dsl"(${ArrFromLs(arr)}: List[A]).filter($f: A => Boolean)" =>
       dsl"""
-        val r = new ArrayBuffer[A]()
+        val r = new ArrayBuffer[A]($arr.size)
         for (x <- $arr) if($f(x)) r append x
         r
       """
@@ -92,6 +92,9 @@ class ListLowering(override val IR: MyLibDSLOps) extends RecursiveRuleBasedTrans
         r append $x
         r
       """)
+      
+    case dsl"(${ArrFromLs(arr)}: List[A]).size" =>
+      dsl"$arr.size"
       
     case dsl"shallow.List.zip[A,B] (${ArrFromLs(xs)}, ${ArrFromLs(ys)})" =>
       // TODO: fix:  for (i <- 0 until n) r append ( ($xs(i), $ys(i)) )
@@ -123,6 +126,7 @@ class ListLowering(override val IR: MyLibDSLOps) extends RecursiveRuleBasedTrans
   def max(a: Rep[Int], b: Rep[Int]): Rep[Int] = dsl"if ($a > $b) $a else $b"
   
   /** Use to reify blocks for more legibility of generated code */
+  //def block[T: TypeRep](x: => Rep[T]) = {
   def block[T](x: => Rep[T]) = {
     //reifyBlock(x)
     x
@@ -141,7 +145,7 @@ class ArrBufLowering(override val IR: MyLibDSLOps) extends RecursiveRuleBasedTra
   
   // Replacing foreach
   rewrite += symRule {
-    case dsl"($arr: ArrayBuffer[A]).foreach($f)" =>
+    case dsl"($arr: ArrayBuffer[A]) foreach $f" =>
       val code = dsl"""
         var i = 0
         while (i < $arr.size) {
@@ -155,6 +159,11 @@ class ArrBufLowering(override val IR: MyLibDSLOps) extends RecursiveRuleBasedTra
   
 
 }
+
+
+
+
+
 
 
 
