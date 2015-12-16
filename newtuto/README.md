@@ -49,14 +49,14 @@ SC provides a way to deeply embed our shallow EDSL _automatically_, via an SBT p
 
 ```scala
 @deep
-@quasi
+@deepExt
 @needs[Numeric[_] :: (_,_) :: Seq[_]]
 @noImplementation
 class List[A](val data: Seq[A]) {
   ...
 ```
 
-Here, the `@deep` and `@quasi` annotation tells Purgatory that we would like deep embeddings of this class both for expression (_Exp_, the normal deep embedding) and extraction (_Ext_, used for pattern-matching with quasiquotes).
+Here, the `@deep` and `@deepExt` annotation tells Purgatory that we would like deep embeddings of this class both for expression (_Exp_, the normal deep embedding) and extraction (_Ext_, used for pattern-matching with quasiquotes).
 
 `@needs` specifies which DSL features our DSL requires. Since our library uses 2-element tuples and they are not present in the default `Base` DSL embedded with SC, we need to add this requirement. If we omitted it, the generated code would not be able to compile.  
 Note that `(_,_)` is just syntax sugar for `Tuple2[_,_]`, and that a special `::` type, defined in `pardis.annotations`, is used to separate the types passed to `@needs`.
