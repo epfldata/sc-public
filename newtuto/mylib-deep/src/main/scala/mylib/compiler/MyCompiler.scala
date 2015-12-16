@@ -17,11 +17,9 @@ class MyCompiler(val DSL: MyLibDSLOps, name: String, offlineOptim: Boolean = fal
   
   if (offlineOptim) {
     
-    pipeline += PartiallyEvaluate  // used to crash... for some reason... <- needs DCE to run before!
+    pipeline += PartiallyEvaluate
     
-    //pipeline += new Optim.Offline.HighLevel(DSL)
-    pipeline += new Optim.HighLevel(DSL)
-    pipeline += new Optim.Generic(DSL)
+    pipeline += new Optim(DSL)
     
     pipeline += DCE
     
@@ -29,35 +27,9 @@ class MyCompiler(val DSL: MyLibDSLOps, name: String, offlineOptim: Boolean = fal
   
   if (lowering > 0) {
     
-    pipeline += new ListLowering(DSL)
+    pipeline += new Lowering(DSL)
     
     pipeline += DCE
-    
-    if (lowering > 1) {
-      
-      pipeline += new ArrBufLowering(DSL)
-      
-      pipeline += DCE
-      
-      if (lowering > 2) {
-        
-        pipeline += new CGenLowering(DSL)
-        
-        pipeline += DCE
-        
-      }
-    }
-    
-    if (offlineOptim) {
-      
-      pipeline += PartiallyEvaluate
-      
-      //pipeline += new Optim.Offline.Generic(DSL)
-      pipeline += new Optim.Generic(DSL)
-      
-      pipeline += DCE
-      
-    }
     
   }
   

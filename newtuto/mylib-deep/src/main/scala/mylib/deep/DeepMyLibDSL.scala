@@ -14,7 +14,7 @@ import pardis.deep.scalalib.io._
 import ch.epfl.data.sc.pardis.quasi.anf.{ BaseExt, BaseExtIR }
 import ch.epfl.data.sc.pardis.quasi.TypeParameters.MaybeParamTag
 
-trait MyLibDSLOps extends Base with ListOps with MemOps with ScalaCoreOps with ch.epfl.data.sc.pardis.quasi.anf.BaseQuasiExp {  
+trait MyLibDSLOps extends Base with ch.epfl.data.sc.pardis.quasi.anf.BaseQuasiExp {  
   // Type representation
   val MyLibDSLType = MyLibDSLIRs.MyLibDSLType
   implicit val typeMyLibDSL: TypeRep[MyLibDSL] = MyLibDSLType
@@ -33,9 +33,6 @@ trait MyLibDSLOps extends Base with ListOps with MemOps with ScalaCoreOps with c
   type MyLibDSL = mylib.shallow.MyLibDSL
 }
 object MyLibDSLIRs extends Base {
-  import ListIRs._
-  import MemIRs._
-  import ScalaCoreIRs._
   // Type representation
   case object MyLibDSLType extends TypeRep[MyLibDSL] {
     def rebuild(newArguments: TypeRep[_]*): TypeRep[_] = MyLibDSLType
@@ -69,20 +66,14 @@ trait MyLibDSLPartialEvaluation extends MyLibDSLComponent with BasePartialEvalua
 
 object MyLibDSLQuasiNodes extends BaseExtIR {
   import MyLibDSLIRs._
-  import ListQuasiNodes._
-  import MemQuasiNodes._
-  import ScalaCoreQuasiNodes._
   // case classes
   type MyLibDSL = mylib.shallow.MyLibDSL
 }
 
-trait MyLibDSLExtOps extends BaseExt with ListExtOps with MemExtOps with ScalaCoreExtOps with ch.epfl.data.sc.pardis.quasi.anf.BaseQuasiExt {
+trait MyLibDSLExtOps extends BaseExt with ch.epfl.data.sc.pardis.quasi.anf.BaseQuasiExt {
   
   import MyLibDSLQuasiNodes._
   import ch.epfl.data.sc.pardis.quasi.OverloadHackObj._
-  import ListQuasiNodes._
-  import MemQuasiNodes._
-  import ScalaCoreQuasiNodes._
   implicit class MyLibDSLRep(self : Rep[MyLibDSL]) {
   }
   object MyLibDSL {
