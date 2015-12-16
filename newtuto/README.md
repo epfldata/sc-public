@@ -275,6 +275,14 @@ This also means that recursive extractors should define their `newTypeParams` pa
 
 [TODO]
 
+In order to compile our DSL to C, we must take into account the fact that C does not have garbage collection,
+and uses instead explicit allocation and and deallocation of memory using the `malloc`/`free` primitives.
+
+
+
+
+
+
 
 
 ## Annex: Online Optimizations
