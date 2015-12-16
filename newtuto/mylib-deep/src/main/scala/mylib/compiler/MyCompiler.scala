@@ -40,6 +40,8 @@ class MyCompiler(val DSL: MyLibDSLOps, name: String, offlineOptim: Boolean = fal
       pipeline += DCE
       
       if (lowering > 2) {
+
+        pipeline += new ArrayBufferToArray(DSL)
         
         pipeline += new CGenLowering(DSL)
         

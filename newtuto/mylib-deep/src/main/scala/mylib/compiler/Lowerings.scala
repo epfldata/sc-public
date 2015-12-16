@@ -163,6 +163,45 @@ class ArrBufLowering(override val IR: MyLibDSLOps) extends RecursiveRuleBasedTra
 
 
 
+class ArrayBufferToArray(override val IR: MyLibDSLOps) extends RecursiveRuleBasedTransformer[MyLibDSLOps](IR) {
+  import scala.collection._
+  
+  implicit val ctx = IR // for quasiquotes
+  
+  import IR.Predef._
+  import IR.{ Block, __newVar }  // TODO put in Predef
+  
+  val params = newTypeParams('A); import params._
+  
+  //rewrite += rule { case b @ Block(sts, r) => ... } // Doesn't work
+  rewrite += symRule {
+    
+    case dsl"($arr: ArrayBuffer[A]) append $e" =>
+      assert(subst isDefinedAt arr)
+      val myarr = subst(arr).asInstanceOf[Rep[Array[A]]]
+      val v = arraySizes(myarr)
+      dsl"$myarr($v) = $e; $v = $v + 1"
+
+    case dsl"($arr: ArrayBuffer[A]).size" =>
+      assert(subst isDefinedAt arr)
+      dsl"${arraySizes(subst(arr))}"
+      
+    case dsl"($arr: ArrayBuffer[A])($i)" =>
+      val myarr = subst(arr).asInstanceOf[Rep[Array[A]]]
+      dsl"$myarr($i)"
+      
+  }
+
+  rewrite += statement {
+    case sym -> (x @ dsl"new ArrayBuffer[A]($size)") => 
+      val res = dsl"new Array[A]($size)"
+      arraySizes(res) = __newVar(unit(0))
+      res
+  }
+  
+  val arraySizes = mutable.Map[Rep[_], IR.Var[Int]]()
+  
+}
 
 
 
