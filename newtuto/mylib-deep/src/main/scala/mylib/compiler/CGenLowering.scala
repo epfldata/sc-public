@@ -16,7 +16,6 @@ class CGenLowering(override val IR: MyLibDSLOps) extends RecursiveRuleBasedTrans
   implicit val ctx = IR // for quasiquotes
   
   import IR.Predef._
-  import IR.{ Block, __newVar }  // TODO put in Predef
   
   val params = newTypeParams('A); import params._
 
