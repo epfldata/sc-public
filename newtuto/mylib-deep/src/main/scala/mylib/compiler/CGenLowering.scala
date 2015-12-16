@@ -16,7 +16,6 @@ class CGenLowering(override val IR: MyLibDSLOps) extends RecursiveRuleBasedTrans
   implicit val ctx = IR // for quasiquotes
   
   import IR.Predef._
-  import IR.{ Block, __newVar }  // TODO put in Predef
   
   val params = newTypeParams('A,'B); import params._
   
@@ -39,7 +38,7 @@ class CGenLowering(override val IR: MyLibDSLOps) extends RecursiveRuleBasedTrans
       
   }
   
-  val arraySizes = mutable.Map[Rep[_], IR.Var[Int]]()
+  val arraySizes = mutable.Map[Rep[_], Var[Int]]()
   
   //override def transformBlock[T: TypeRep](b: Block[T]) = { // doesn't work; FIXME remove this confusing one
   override def transformBlockTyped[T: TypeRep, S: TypeRep](b: Block[T]): to.Block[S] = {
@@ -53,7 +52,7 @@ class CGenLowering(override val IR: MyLibDSLOps) extends RecursiveRuleBasedTrans
         case Stm(sym, x @ dsl"new ArrayBuffer[A]($size)") =>
           val e = dsl"Mem.alloc[A]($size)"
           
-          val sizeVar = __newVar(unit(0))
+          val sizeVar = newVar(unit(0))
           arraySizes += (e -> sizeVar)
           
           arrays += Arr(e)
