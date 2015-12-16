@@ -317,4 +317,8 @@ As you can see, it is easier to use quasiquotes to match deep embedding nodes, b
 
 [TODO] talk about inlining, and `@transformation` (to inline method impls)
 
+[TODO] talk about the typical error `found: QQGenerated.this.Rep[Int], required: Int`, that hints to a missing deep class (eg: forgetting to include `Mem`)
+
+
+
 

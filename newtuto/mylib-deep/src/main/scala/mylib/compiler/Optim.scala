@@ -11,6 +11,8 @@ import shallow._
 
 object Optim {
   
+  implicit val Context = Main.Context
+  
   //object Offline {
     
     class HighLevel(override val IR: MyLibDSLOps) extends RecursiveRuleBasedTransformer[MyLibDSLOps](IR) {
@@ -59,8 +61,6 @@ object Optim {
   //}
   
   trait Online extends ListComponent with NumericOps {
-    
-    private implicit val Context = Main.Context // QQ need an implicit context
     
 //    // The map.map optimization as defined online: // doesn't work because of QQ pgrm (cf: Notes.md)
 //    override def listMap[A: TypeRep, B: TypeRep](self : Rep[List[A]], f : Rep[((A) => B)]): Rep[List[B]] = self match {
