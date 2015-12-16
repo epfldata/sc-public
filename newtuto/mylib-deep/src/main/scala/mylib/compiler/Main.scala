@@ -9,7 +9,13 @@ object Main extends App {
   
   implicit object Context extends MyLibDSLOps
   
-  def pgrm = ???
+  def pgrm = dsl"""
+      
+    val zero = List[Int]().size
+    
+    zero
+    
+  """
   
   {
     import Context._  // needed to provide the `compile` methods with an implicit TypeRep
@@ -17,7 +23,7 @@ object Main extends App {
     // Creates the directories if they do not already exist
     new java.io.File("generator-out/src/main/scala").mkdirs()
     
-    new MyCompiler(Context, "GenApp", offlineOptim = false).compile(pgrm, "src/main/scala/GenApp")
+    new MyCompiler(Context, "GenApp", offlineOptim = true).compile(pgrm, "src/main/scala/GenApp")
   }
   
 }

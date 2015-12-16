@@ -7,4 +7,5 @@ import ch.epfl.data.sc.pardis.shallow.scalalib._
 @quasiquotation
 @deep
 @deepExt
+@needs[List[_]]
 trait MyLibDSL

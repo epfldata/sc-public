@@ -17,7 +17,9 @@ class Optim (override val IR: MyLibDSLOps) extends RecursiveRuleBasedTransformer
   import IR.Predef._
   
   
-  
+  rewrite += symRule {
+    case dsl"List[A]().size" => dsl"0"
+  }
   
   
   
