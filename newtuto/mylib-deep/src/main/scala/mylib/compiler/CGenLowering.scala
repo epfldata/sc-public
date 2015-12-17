@@ -3,9 +3,9 @@ package compiler
 
 import scala.collection.mutable.ArrayBuffer
 
-import ch.epfl.data.sc
-import sc.pardis.optimization.RecursiveRuleBasedTransformer
-import sc.pardis.quasi.TypeParameters._
+import ch.epfl.data.sc.pardis
+import pardis.optimization.RecursiveRuleBasedTransformer
+import pardis.quasi.TypeParameters._
 
 import mylib.deep.MyLibDSLOps
 import mylib.shallow._  

@@ -1,12 +1,10 @@
 package mylib
 package compiler
 
-import ch.epfl.data._
-import sc._
-import pardis.types._
-import sc.pardis.ir._
-import sc.pardis.optimization._
-import sc.pardis.compiler._
+import ch.epfl.data.sc.pardis
+import pardis.optimization._
+import pardis.compiler._
+
 import deep._
 
 class MyCompiler(val DSL: MyLibDSLOps, name: String, offlineOptim: Boolean = false, lowering: Int = 0) extends Compiler[MyLibDSLOps] {
@@ -66,11 +64,11 @@ class MyCompiler(val DSL: MyLibDSLOps, name: String, offlineOptim: Boolean = fal
   
   // Outputting Scala code inside an executable wrapper:
   
-  import sc.pardis.prettyprinter._
+  import pardis.prettyprinter._
   
-  val codeGenerator = new ScalaCodeGenerator /*with ASTCodeGenerator[MyLibDSLOps]*/ {
+  val codeGenerator = new ScalaCodeGenerator with ASTCodeGenerator[MyLibDSLOps] {
     val IR = DSL
-    import sc.pardis.utils.document.Document
+    import pardis.utils.document.Document
     override def getHeader(): Document = s"""
       |package mylib
       |import mylib.shallow._

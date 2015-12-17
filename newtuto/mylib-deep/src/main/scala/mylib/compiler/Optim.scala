@@ -1,7 +1,7 @@
 package mylib
 package compiler
 
-import ch.epfl.data.sc.pardis  
+import ch.epfl.data.sc.pardis
 import pardis.deep.scalalib.NumericOps
 import pardis.quasi.TypeParameters._
 import pardis.optimization.RecursiveRuleBasedTransformer
