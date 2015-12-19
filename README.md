@@ -9,3 +9,4 @@ We concretely demonstrate this development process through two toy examples:
  * the [List](https://github.com/epfldata/sc-examples/blob/master/newtuto) tutorial: using quasiquotes to define lowerings and offline optimization on a simple `List` class, and converting it to simple C-like memory management
  * the [Vector](https://github.com/epfldata/sc-examples/blob/master/vector-dsl) tutorial: defining a DSL for working with Vectors
  
+Some additional docs are provided in the [`doc`](https://github.com/epfldata/sc-examples/blob/master/doc) folder.
