@@ -37,8 +37,32 @@ object List {
 See the full file [here](https://github.com/epfldata/sc-examples/blob/master/newtuto/src/main/scala/mylib/shallow/List.scala).
 
 The EDSL can already be used like a normal Scala library.
+It can be tested by typing `sbt console`, and importing `mylib.shallow._`, as in the following sbt session example:
+```scala
+sc-examples/newtuto$ sbt console
+[info] ...
+Welcome to Scala version 2.11.7 (Java HotSpot(TM) 64-Bit Server VM, Java 1.8.0_65).
 
-Now, we'd like to have more power and be able to optimize/transform it, as well as compile it to different targets. These require _deep embedding_.
+scala> import mylib.shallow._
+import mylib.shallow._
+
+scala> List(1,2,3) map (_ + 1) map (_.toDouble)
+res0: mylib.shallow.List[Double] = List(2.0, 3.0, 4.0)
+```
+
+One can also create an application using it, by adding a file with content similar to:
+
+```scala
+package mylib.shallow
+
+object Main extends App {
+  val ls = List(1,2,3) map (_ + 1) map (_.toDouble)
+  println(ls)
+}
+```
+
+
+Now, we'd like to have more power and be able to optimize/transform programs written in the DSL, as well as compile it to different targets. These require _deep embedding_.
 
 
 ## Step 2: Generating the Deep Embedding
@@ -138,6 +162,8 @@ def pgrm = dsl"""
 ```
 
 What the `dsl` macro does is to typecheck the shallow expression that we pass it, and transform it to deep embedding (_MyLibDSL_ if it is used in an expression, _MyLibDSLExt_ if it is used in a pattern).
+
+**Note**: If you have trouble with a quasiquote, there is a page dedicated to [debugging quasiquptes](https://github.com/epfldata/sc-examples/blob/master/doc/DebuggingQuasiquotes.md).
 
 Finally, in order to generate a program from this deep embedding, we have to extend `pardis.compiler.Compiler[MyLibDSL]` and define a code generator for it. This is going in the opposite direction as the `dsl` macro, i.e., from deep embedding to shallow embedding.
 
