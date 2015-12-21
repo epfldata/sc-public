@@ -21,14 +21,13 @@ class ListLowering(override val IR: MyLibDSLOps) extends RecursiveRuleBasedTrans
   
   // Required to tell SC what type tranformations are being performed
   override def transformType[T](implicit tp: TypeRep[T]): TypeRep[Any] = tp match {
-    case lst: IR.ListType[t] => IR.ArrayBufferType[t](lst.typeA)
-        .asInstanceOf[TypeRep[Any]]
+    case lst: IR.ListType[t] => IR.ArrayBufferType[t](lst.typeA).asInstanceOf[TypeRep[Any]]
     case _ => super.transformType(tp)
   }
   
   // Replacing List construction
   rewrite += symRule {
-
+    
     case dsl"shallow.List[A]($xs*)" =>
       block {
         val buffer = dsl"new ArrayBuffer[A](${unit(xs.size)})"

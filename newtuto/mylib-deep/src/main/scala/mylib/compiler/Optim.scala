@@ -50,10 +50,18 @@ object Optim {
     class Generic(override val IR: MyLibDSLOps) extends RecursiveRuleBasedTransformer[MyLibDSLOps](IR) {
       val params = newTypeParams('A,'B); import params._
       
+      import IR.Predef._
+      
       // Reduction of redexes (inlining calls to lambdas)
       rewrite += symRule {
         case dsl"(${Lambda(f)}: A => B).apply($arg)" =>
           f(arg)
+        
+        /*
+        // Another example of generic optimization:
+        case dsl"(${Constant(a)}: Double) * (${Constant(b)}: Double)" =>
+          dsl"${a*b}"
+        */
       }
       
     }
