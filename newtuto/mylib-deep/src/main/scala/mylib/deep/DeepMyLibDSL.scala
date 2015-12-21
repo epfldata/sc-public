@@ -52,11 +52,6 @@ trait MyLibDSLImplicits extends MyLibDSLOps {
 }
 trait MyLibDSLComponent extends MyLibDSLOps with MyLibDSLImplicits {  }
 
-trait MyLibDSLImplementations extends MyLibDSLOps { 
-
-}
-
-
 trait MyLibDSLPartialEvaluation extends MyLibDSLComponent with BasePartialEvaluation {  
   // Immutable field inlining 
 

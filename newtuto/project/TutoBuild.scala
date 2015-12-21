@@ -6,7 +6,7 @@ import ch.epfl.data.sc.purgatory.plugin.PurgatoryPlugin._
 
 object TutoBuild extends Build {
   
-  val SCVersion = "0.1.0-SNAPSHOT"
+  val SCVersion = "0.1.1-SNAPSHOT"
   
   def defaultSettings = Defaults.coreDefaultSettings ++ Seq(
       scalaVersion := "2.11.7",

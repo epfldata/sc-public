@@ -4,9 +4,7 @@ import ch.epfl.data.sc.pardis.annotations._
 import scala.reflect.ClassTag
 
 @deep
-@deepExt
 @needs[Numeric[_] :: ClassTag[_]]
-@noImplementation
 class Mem
 
 object Mem {
