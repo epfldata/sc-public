@@ -169,7 +169,6 @@ class ArrayBufferToArray(override val IR: MyLibDSLOps) extends RecursiveRuleBase
   implicit val ctx = IR // for quasiquotes
   
   import IR.Predef._
-  import IR.{ Block, __newVar }  // TODO put in Predef
   
   val params = newTypeParams('A); import params._
   
@@ -195,7 +194,7 @@ class ArrayBufferToArray(override val IR: MyLibDSLOps) extends RecursiveRuleBase
   rewrite += statement {
     case sym -> (x @ dsl"new ArrayBuffer[A]($size)") => 
       val res = dsl"new Array[A]($size)"
-      arraySizes(res) = __newVar(unit(0))
+      arraySizes(res) = newVar(unit(0))
       res
   }
   
