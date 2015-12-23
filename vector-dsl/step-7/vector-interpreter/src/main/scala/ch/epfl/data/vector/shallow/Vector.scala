@@ -7,7 +7,8 @@ import scala.collection.mutable.IndexedSeq
 
 @deep
 @transformation
-@needs[(scala.runtime.RichInt, Seq[_], Numeric[_], IndexedSeq[_])]
+@onlineInliner
+@needs[scala.runtime.RichInt :: Seq[_] :: Numeric[_] :: IndexedSeq[_]]
 class Vector(val data: Seq[Int]) {
   @pure def +(v2: Vector): Vector = {
     val resultData = for (i <- 0 until data.size) yield (data(i) + v2.data(i))

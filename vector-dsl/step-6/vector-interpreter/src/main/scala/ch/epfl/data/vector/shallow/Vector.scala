@@ -5,7 +5,6 @@ package shallow
 import ch.epfl.data.sc.pardis.annotations._
 
 @deep
-@noImplementation
 class Vector(val data: Seq[Int]) {
   @pure def +(v2: Vector): Vector = {
     val resultData = for (i <- 0 until data.size) yield (data(i) + v2.data(i))

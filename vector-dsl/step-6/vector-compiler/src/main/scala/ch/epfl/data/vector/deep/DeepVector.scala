@@ -10,6 +10,7 @@ import pardis.deep._
 import pardis.deep.scalalib._
 import pardis.deep.scalalib.collection._
 import pardis.deep.scalalib.io._
+
 trait VectorOps extends Base {
   // Type representation
   val VectorType = VectorIRs.VectorType
@@ -57,8 +58,6 @@ object VectorIRs extends Base {
     def rebuild(newArguments: TypeRep[_]*): TypeRep[_] = VectorType
     val name = "Vector"
     val typeArguments = Nil
-
-    val typeTag = scala.reflect.runtime.universe.typeTag[Vector]
   }
   implicit val typeVector: TypeRep[Vector] = VectorType
   // case classes
@@ -146,6 +145,8 @@ object VectorIRs extends Base {
 trait VectorImplicits extends VectorOps {
   // Add implicit conversions here!
 }
+trait VectorComponent extends VectorOps with VectorImplicits {}
+
 trait VectorPartialEvaluation extends VectorComponent with BasePartialEvaluation {
   // Immutable field inlining 
   override def vector_Field_Data(self: Rep[Vector]): Rep[Seq[Int]] = self match {
@@ -156,4 +157,4 @@ trait VectorPartialEvaluation extends VectorComponent with BasePartialEvaluation
   // Mutable field inlining 
   // Pure function partial evaluation
 }
-trait VectorComponent extends VectorOps with VectorImplicits {}
+
