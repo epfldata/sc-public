@@ -7,7 +7,7 @@ As we discussed in development process, there are two main phases for defining a
 
 Defining an interpreter does not require Pardis compiler. In other words, its definition can be written standalone. However, for overriding language constructs of Scala, we propose using Yin-Yang. This interpreter is defined as a project named as `vector-interpreter`. As we do not override any language feature of Scala, this project is not dependent on Yin-Yang.
 
-The `Vector` data-structure is implemented by defining the [corresponding class](https://github.com/epfldata/sc-examples/blob/master/vector-interpreter/src/main/scala/ch/epfl/data/vector/shallow/Vector.scala) for it. Different operations on this data-structure are defined as methods of this class. [`Step1`](https://github.com/epfldata/sc-examples/tree/Step1) shows how to define `vector-interpreter` and the `Vector` class.
+The `Vector` data-structure is implemented by defining the [corresponding class](https://github.com/epfldata/sc-examples/blob/master/vector-interpreter/src/main/scala/ch/epfl/data/vector/shallow/Vector.scala) for it. Different operations on this data-structure are defined as methods of this class. [`Step1`](https://github.com/epfldata/sc-examples/tree/master/vector-dsl/step-1) shows how to define `vector-interpreter` and the `Vector` class.
 
 You can try out the `Vector` data structure in the Scala REPL as follows. Start sbt, enter `project vector-interpreter`, and then run `console`. Then enter, e.g.,
 ```scala
@@ -34,7 +34,7 @@ The project `vector-compiler` is the compiler project for this Vector DSL. `Deep
 
 The core part of the compiler which receives an input and applies optimizations and finally generates codes is `VectorCompiler` class. By adding a transformation to the pipeline, we can specify different optimizations which should be applied. Furthermore, for the compiler we should specify a code generator which is defined in `VectorScalaGenerator` class.
 
-[`Step2`](https://github.com/epfldata/sc-examples/tree/Step2) shows how to define `vector-compiler` and how to annotate the `Vector` class. `@noImplementation` specifies that we do not want to lift the implementation of the methods and it suffices to lift only the signature of the methods.
+[`Step2`](https://github.com/epfldata/sc-examples/tree/master/vector-dsl/step-2) shows how to define `vector-compiler` and how to annotate the `Vector` class.
 
 You can run the compiler from the console as follows. Start sbt and enter `project vector-compiler` and then `console`. Then copy-paste the following code.
 ```scala
@@ -58,9 +58,9 @@ The output file is written to the `generator-out` directory.
 
 The project `vector-application` is the project which uses both projects `vector-interpreter` and `vector-compiler` in order to either interpret or compile the input applications. For interpreting the program, the program uses the Vector library in a normal manner. This the program produces the result of computation whenever it is executed. For compiling the program, we use the polymorphic embedding approach to lift the program. However, as we need operations over `Seq` and `Int`, the `VectorDSL` should mix-in the corresponding deep interfaces (`IntOps` and `SeqOps`). Then, we invoke the `compile` method of `VectorCompiler` over the lifted program. This will generate a Scala program out of this program in the `generator-out` folder. 
 
-`Example1` file shows the interpretation under the name `Example1Shallow` and the compilation under the name `Example1Deep`. [`Step3`](https://github.com/epfldata/sc-examples/tree/Step3) shows how we implemented this example.
+`Example1` file shows the interpretation under the name `Example1Shallow` and the compilation under the name `Example1Deep`. [`Step3`](https://github.com/epfldata/sc-examples/tree/master/vector-dsl/step-3) shows how we implemented this example.
 
-An alternative for compiling a program would be to write the program as we write in the shallow interface, and use Yin-Yang to lift it to the corresponding deep program. The shallow program is written inside the `dsl` macro. This macro uses Yin-Yang in order to convert the block inside it into the corresponding block in the deep embedding interface. This process is done in [`Step4`](https://github.com/epfldata/sc-examples/tree/Step4). 
+An alternative for compiling a program would be to write the program as we write in the shallow interface, and use Yin-Yang to lift it to the corresponding deep program. The shallow program is written inside the `dsl` macro. This macro uses Yin-Yang in order to convert the block inside it into the corresponding block in the deep embedding interface. This process is done in [`Step4`](https://github.com/epfldata/sc-examples/tree/master/vector-dsl/step-4). 
 
 ## Vector Optimization (Steps 5 & 6)
 
@@ -68,11 +68,29 @@ There are two approaches for defining optimizations. 1) Online transformations: 
 
 In the file `VectorOpt` we have defined a domain-specific optimization for addition of two vectors using online transformation. Whenever a vector addition node is reified, we check if one of two vectors is zero, there is no more need to create an addition node. It is enough to return the non-zero node. To combine the optimized interfaces, we define `VectorDSLOpt` which combines all optimization interfaces.
 
-For applying this optimizations for input applications, there are again two ways. 1) Using polymorphic embedding on trait `VectorDSLOpt` and compile the lifted program. 2) Use `dslOpt` macro defined using Yin-Yang. We define `Example2` which adds a zero vector with another vector. This is done in [`Step5`](https://github.com/epfldata/sc-examples/tree/Step5).
+For applying this optimizations for input applications, there are again two ways. 1) Using polymorphic embedding on trait `VectorDSLOpt` and compile the lifted program. 2) Use `dslOpt` macro defined using Yin-Yang. We define `Example2` which adds a zero vector with another vector. This is done in [`Step5`](https://github.com/epfldata/sc-examples/tree/master/vector-dsl/step-5).
 
 After generating the code for one of the applications in which the mentioned optimization is applicable, we found that although the zero vector is not used, the code for creating it still exists. The reason is that the dead code elimination has not been applied to this program. For applying this optimization we add the following line in `VectorCompiler` class:
 `pipeline += DCE`
 
-Ever after adding this optimization still the zero vector statement is not removed. The reason is that the compiler thinks that the creation of a zero vector is an effectful computation. In order to guide the pureness of this method, we use `@pure` annotation on this method. After rerunning the `embed` command in `vector-interpreter` project, the generated program will no longer contain any zero vector. This is done in [`Step6`](https://github.com/epfldata/sc-examples/tree/Step6).
+Ever after adding this optimization still the zero vector statement is not removed. The reason is that the compiler thinks that the creation of a zero vector is an effectful computation. In order to guide the pureness of this method, we use `@pure` annotation on this method. After rerunning the `embed` command in `vector-interpreter` project, the generated program will no longer contain any zero vector. This is done in [`Step6`](https://github.com/epfldata/sc-examples/tree/master/vector-dsl/step-6).
 
-_TO BE CONTINUED_
+## Inlining and Lowering (Step 7)
+
+In order to get rid of the Vector abstraction in the generated code, one has to *lower* the Vector abstraction. 
+This achieved by *inlining* the Vector operations to their corresponding implementation. Similar to other 
+transformations, inlining can be performed in both online and offline manner. 
+
+The `@onlineInliner` is for generating an online transformation trait called `VectorImplementations`. By mixing in 
+this trait, every Vector operation is inlined to its corresponding implementation. Although this transformation
+removes one level of indirection, it causes the high-level Vector optimizations to not be applied.
+
+The `@transformation` generates an offline transformation for inlining the Vector operations. In the compilation 
+pipeline this transformation should be placed in an appropriate place. This is done by adding the following line in
+`VectorCompiler` class:
+`pipeline += new VectorTransformation(DSL)`
+
+Furthermore, as the operations on lower level data structures are needed, one has to import these data structures.
+`@needs` is the annotation for specifying the list of types that the current data structures is dependent on.
+Further optimizations can be added to the compilation pipeline in the `VectorCompiler` class. All these tasks
+are done in [`Step7`](https://github.com/epfldata/sc-examples/tree/master/vector-dsl/step-7).

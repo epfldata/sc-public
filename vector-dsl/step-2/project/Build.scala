@@ -40,7 +40,7 @@ object VectorBuild extends Build {
   lazy val vector_interpreter = Project(id = "vector-interpreter", base = file("vector-interpreter"), settings = defaults ++ purgatorySettings ++ Seq(
     name := "vector-interpreter"))
   lazy val vector_compiler    = Project(id = "vector-compiler", base = file("vector-compiler"), settings = defaults ++ Seq(name := "vector-compiler",
-      libraryDependencies += "ch.epfl.data" % "sc-pardis-compiler_2.11" % "0.1-SNAPSHOT",
+      libraryDependencies += "ch.epfl.data" % "sc-pardis-compiler_2.11" % "0.1.1-SNAPSHOT",
       libraryDependencies += "ch.epfl.lamp" % "scala-yinyang_2.11" % "0.2.0-SNAPSHOT",
       scalacOptions in Test ++= Seq("-optimize"))) dependsOn(vector_interpreter)
 }
