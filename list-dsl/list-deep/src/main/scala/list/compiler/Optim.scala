@@ -1,4 +1,4 @@
-package mylib
+package list
 package compiler
 
 import ch.epfl.data.sc.pardis
@@ -6,7 +6,7 @@ import pardis.deep.scalalib.NumericOps
 import pardis.quasi.TypeParameters._
 import pardis.optimization.RecursiveRuleBasedTransformer
 
-import mylib.deep.{ListComponent, MyLibDSLOps}
+import list.deep.{ListComponent, ListDSLOps}
 import shallow._
 
 object Optim {
@@ -15,7 +15,7 @@ object Optim {
   
   //object Offline {
     
-    class HighLevel(override val IR: MyLibDSLOps) extends RecursiveRuleBasedTransformer[MyLibDSLOps](IR) {
+    class HighLevel(override val IR: ListDSLOps) extends RecursiveRuleBasedTransformer[ListDSLOps](IR) {
       val params = newTypeParams('A,'B,'C); import params._
       import IR.Predef._
       
@@ -47,7 +47,7 @@ object Optim {
       
     }
     
-    class Generic(override val IR: MyLibDSLOps) extends RecursiveRuleBasedTransformer[MyLibDSLOps](IR) {
+    class Generic(override val IR: ListDSLOps) extends RecursiveRuleBasedTransformer[ListDSLOps](IR) {
       val params = newTypeParams('A,'B); import params._
       
       import IR.Predef._

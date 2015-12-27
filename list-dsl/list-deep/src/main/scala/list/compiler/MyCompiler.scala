@@ -1,4 +1,4 @@
-package mylib
+package list
 package compiler
 
 import ch.epfl.data.sc.pardis
@@ -7,7 +7,7 @@ import pardis.compiler._
 
 import deep._
 
-class MyCompiler(val DSL: MyLibDSLOps, name: String, offlineOptim: Boolean = false, lowering: Int = 0) extends Compiler[MyLibDSLOps] {
+class MyCompiler(val DSL: ListDSLOps, name: String, offlineOptim: Boolean = false, lowering: Int = 0) extends Compiler[ListDSLOps] {
   
   // Pipeline Definition:
   
@@ -15,7 +15,7 @@ class MyCompiler(val DSL: MyLibDSLOps, name: String, offlineOptim: Boolean = fal
   
   if (offlineOptim) {
     
-    pipeline += PartiallyEvaluate  // used to crash... for some reason... <- needs DCE to run before!
+    pipeline += PartiallyEvaluate 
     
     //pipeline += new Optim.Offline.HighLevel(DSL)
     pipeline += new Optim.HighLevel(DSL)
@@ -66,12 +66,12 @@ class MyCompiler(val DSL: MyLibDSLOps, name: String, offlineOptim: Boolean = fal
   
   import pardis.prettyprinter._
   
-  val codeGenerator = new ScalaCodeGenerator with ASTCodeGenerator[MyLibDSLOps] {
+  val codeGenerator = new ScalaCodeGenerator with ASTCodeGenerator[ListDSLOps] {
     val IR = DSL
     import pardis.utils.document.Document
     override def getHeader(): Document = s"""
-      |package mylib
-      |import mylib.shallow._
+      |package list
+      |import list.shallow._
       |import scala.collection.mutable.ArrayBuffer""".stripMargin
     override def getTraitSignature(): Document = s"""
       |object $name {
@@ -83,20 +83,3 @@ class MyCompiler(val DSL: MyLibDSLOps, name: String, offlineOptim: Boolean = fal
   }
   
 }
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-

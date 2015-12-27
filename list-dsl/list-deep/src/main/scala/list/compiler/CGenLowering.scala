@@ -1,4 +1,4 @@
-package mylib
+package list
 package compiler
 
 import scala.collection.mutable.ArrayBuffer
@@ -7,10 +7,10 @@ import ch.epfl.data.sc.pardis
 import pardis.optimization.RecursiveRuleBasedTransformer
 import pardis.quasi.TypeParameters._
 
-import mylib.deep.MyLibDSLOps
-import mylib.shallow._  
+import list.deep.ListDSLOps
+import list.shallow._  
 
-class CGenLowering(override val IR: MyLibDSLOps) extends RecursiveRuleBasedTransformer[MyLibDSLOps](IR) {
+class CGenLowering(override val IR: ListDSLOps) extends RecursiveRuleBasedTransformer[ListDSLOps](IR) {
   import scala.collection._
   
   implicit val ctx = IR // for quasiquotes

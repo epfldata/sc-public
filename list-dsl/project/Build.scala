@@ -4,7 +4,7 @@ import Keys._
 import Process._
 import ch.epfl.data.sc.purgatory.plugin.PurgatoryPlugin._
 
-object TutoBuild extends Build {
+object Build extends Build {
   
   val SCVersion = "0.1.1-SNAPSHOT"
   
@@ -18,7 +18,7 @@ object TutoBuild extends Build {
       scalacOptions in Test ++= Seq("-optimize")*/
   )
   
-  lazy val mylib = Project(id = "mylib", base = file("."), settings = defaultSettings ++ Seq(
+  lazy val list = Project(id = "list", base = file("."), settings = defaultSettings ++ Seq(
       
       libraryDependencies += "ch.epfl.data" % "sc-pardis-quasi_2.11" % SCVersion
       
@@ -28,15 +28,15 @@ object TutoBuild extends Build {
         generatePlugins += "ch.epfl.data.sc.purgatory.generator.QuasiGenerator",
         pluginLibraries += "ch.epfl.data" % "sc-purgatory-quasi_2.11" % SCVersion,
   
-        outputFolder := "mylib-deep/src/main/scala/mylib/deep",
-        inputPackage := "mylib.shallow",
-        outputPackage := "mylib.deep"
+        outputFolder := "list-deep/src/main/scala/list/deep",
+        inputPackage := "list.shallow",
+        outputPackage := "list.deep"
     )
   )
   
-  lazy val mylibdeep = Project(id = "mylib-deep", base = file("mylib-deep"), settings = defaultSettings) dependsOn mylib
+  lazy val listdeep = Project(id = "list-deep", base = file("list-deep"), settings = defaultSettings) dependsOn list
     
-  lazy val mylibgen = Project(id = "mylib-gen", base = file("generator-out"), settings = defaultSettings) dependsOn mylib
+  lazy val listgen = Project(id = "list-gen", base = file("generator-out"), settings = defaultSettings) dependsOn list
   
 }
 
