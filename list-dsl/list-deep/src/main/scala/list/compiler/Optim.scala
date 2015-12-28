@@ -6,7 +6,7 @@ import pardis.deep.scalalib.NumericOps
 import pardis.quasi.TypeParameters._
 import pardis.optimization.RecursiveRuleBasedTransformer
 
-import list.deep.{ListComponent, ListDSLOps}
+import list.deep.{ ListOps, ListDSLOps }
 import shallow._
 
 object Optim {
@@ -68,7 +68,7 @@ object Optim {
   
   //}
   
-  trait Online extends ListComponent with NumericOps {
+  trait ListExpOptimizations extends ListOps {
     
 //    // The map.map optimization as defined online: // doesn't work because of QQ pgrm (cf: Notes.md)
 //    override def listMap[A: TypeRep, B: TypeRep](self : Rep[List[A]], f : Rep[((A) => B)]): Rep[List[B]] = self match {

@@ -1,7 +1,7 @@
 List Tutorial
 ===============
 
-An introduction to EDSL developement can be found in the [Development process](https://github.com/epfldata/sc-examples/blob/master/doc/DevProcess.md) page.
+An introduction to EDSL developement can be found in the [Development process](../doc/DevProcess.md) page.
 Here, we give an example of that methodology, with a simple library for manipulating lists (dubbed `list-dsl`).
 
 ## Step 1: Defining the Library
@@ -33,12 +33,12 @@ object List {
 }
 ```
 
-See the full file [here](https://github.com/epfldata/sc-examples/blob/master/newtuto/src/main/scala/list/shallow/List.scala).
+See the full file [here](https://github.com/epfldata/sc-examples/blob/master/list-dsl/src/main/scala/list/shallow/List.scala).
 
 The EDSL can already be used like a normal Scala library.
 It can be tested by typing `sbt console`, and importing `list.shallow._`, as in the following sbt session example:
 ```scala
-sc-examples/newtuto$ sbt console
+sc-examples/list-dsl$ sbt console
 [info] ...
 Welcome to Scala version 2.11.7 (Java HotSpot(TM) 64-Bit Server VM, Java 1.8.0_65).
 
@@ -125,7 +125,7 @@ generatorSettings ++ Seq(
 
 Don't forget the `generatePlugins` line to be able to use quasiquotation, and to specify correct `outputFolder` (the folder for generated files), `inputPackage` and `outputPackage` (package of the shallow library and package for the deep embedding to be generated).
 
-See [here](https://github.com/epfldata/sc-examples/blob/master/newtuto/project/TutoBuild.scala) for the full build file of our example.
+See [here](https://github.com/epfldata/sc-examples/blob/master/list-dsl/project/Build.scala) for the full build file of our example.
 
 Now that SBT is set up, we can proceed to the actual code generation, by going to the main project root directory, and typing `sbt embed`.
 
@@ -175,7 +175,7 @@ object MyCompiler extends Compiler[ListDSLOps] {
 MyCompiler.compile(pgrm, "src/main/scala/GeneratedApp")
 ```
 
-(See file [MyCompiler](https://github.com/epfldata/sc-examples/blob/master/newtuto/list-deep/src/main/scala/list/compiler/MyCompiler.scala) for an example of definition for `codeGenerator`.)
+(See file [MyCompiler](https://github.com/epfldata/sc-examples/blob/master/list-dsl/list-deep/src/main/scala/list/compiler/MyCompiler.scala) for an example of definition for `codeGenerator`.)
 
 
 
@@ -426,6 +426,9 @@ The example above is similar to the one we described as an offline transformatio
 
 Notice that we use a `shallow.` prefix in front of `List` in order not to capture the `List` object defined in `ListOps`, bur the actual shallow-embedding `List` object.
 
+The overriding method should be defined in a trait (named as `ListExpOptimizations`) which extends the 
+`ListOps` trait. In order to benefit from this online transformation, instead of using the `ListDSLOps` 
+polymorphic embedding interface, one should use another interface which extends both `ListDSLOps` and `ListExpOptimizations`.
 
 ### Manually
 
@@ -439,16 +442,3 @@ Note that the transformation above is essentially equivalent to the following, m
 ```
 
 As you can see, it is easier to use quasiquotes to match deep embedding nodes, because they hide implementation details of the Intermediate Representation by providing the same language as the shallow library.
-
-
----
-
-[TODO] explain where to define the smart ctor overrides
-
-[TODO] talk about inlining, and `@transformation` (to inline method impls)
-
-[TODO] talk about the typical error `found: QQGenerated.this.Rep[Int], required: Int`, that hints to a missing deep class (eg: forgetting to include `Mem`)
-
-
-
-
