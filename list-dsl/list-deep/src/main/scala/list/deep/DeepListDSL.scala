@@ -88,4 +88,6 @@ trait ListDSLExtOps extends BaseExt with ListExtOps with MemExtOps with ScalaCor
   type ListDSL = list.shallow.ListDSL
 }
 
+abstract class ListDSLOpsPackaged extends ListDSLOps
+abstract class ListDSLExtOpsPackaged extends ListDSLExtOps
 

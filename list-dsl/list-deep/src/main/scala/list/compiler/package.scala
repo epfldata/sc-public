@@ -1,6 +1,6 @@
 package list
 
 import ch.epfl.data.sc.pardis.quasi.engine.QuasiAPI
-import list.deep.{ ListDSLOps, ListDSLExtOps }
+import list.deep.{ ListDSLOpsPackaged, ListDSLExtOpsPackaged }
 
-package object compiler extends QuasiAPI[ListDSLOps, ListDSLExtOps]
+package object compiler extends QuasiAPI[ListDSLOpsPackaged, ListDSLExtOpsPackaged]
