@@ -1,4 +1,4 @@
-package mylib.shallow
+package list.shallow
 
 import ch.epfl.data.sc.pardis.annotations._
 import scala.reflect.ClassTag

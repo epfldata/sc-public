@@ -1,4 +1,4 @@
-package mylib
+package list
 package shallow
 
 import ch.epfl.data.sc.pardis.annotations._

@@ -1,4 +1,4 @@
-package mylib
+package list
 package compiler
 
 import shallow._
@@ -7,7 +7,7 @@ import deep._
 object Main extends App {
    //implicit val _ = ch.epfl.data.sc.pardis.quasi.MacroUtils.ApplyDebug
   
-  implicit object Context extends MyLibDSLOps // with Optim.Online // FIXME: does not work when put here... see `Notes.md`
+  implicit object Context extends ListDSLOpsPackaged // with Optim.Online // FIXME: does not work when put here... see `Notes.md`
   
   def pgrmA = dsl"""
       
