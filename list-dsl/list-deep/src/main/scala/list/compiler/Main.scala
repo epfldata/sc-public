@@ -27,7 +27,7 @@ object Main extends App {
     if (ls2.size == 0) {
       List(1,2).size
     } else 0
-    (ls2, ls2.size)
+    (ls2.size)
   """
   
   def pgrmC = dsl"""
@@ -54,6 +54,7 @@ object Main extends App {
     new MyCompiler(Context, "GenAppOptLow", offlineOptim = true, lowering = 1).compile(pgrm, "src/main/scala/GenAppOptLow")
     new MyCompiler(Context, "GenAppOptLowLow", offlineOptim = true, lowering = 2).compile(pgrm, "src/main/scala/GenAppOptLowLow")
     new MyCompiler(Context, "GenAppOptLowLowC", offlineOptim = true, lowering = 3).compile(pgrm, "src/main/scala/GenAppOptLowLowC")
+    new MyCompiler(Context, "Main", offlineOptim = true, lowering = 3, cCodeGen = true).compile(pgrm, "Main")
   }
   
 }
