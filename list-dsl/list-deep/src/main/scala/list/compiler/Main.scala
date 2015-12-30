@@ -47,7 +47,7 @@ object Main extends App {
     printf("%d\n", ls2.size)
   """
   
-  def pgrm = pgrmB
+  def pgrm = pgrmA
   
   {
     import Context.Predef._  // needed to provide the `compile` methods with an implicit TypeRep

@@ -62,6 +62,13 @@ class MyCompiler(val DSL: ListDSLOps, name: String, offlineOptim: Boolean = fals
   }
 
   if(cCodeGen) {
+    pipeline += new RecursiveRuleBasedTransformer(DSL) {
+      import DSL._
+      rewrite += rule {
+        case dsl"($i: Int).toDouble" =>
+          dsl"$i.asInstanceOf[Double]"
+      }
+    }
     pipeline += new CoreLanguageToC(DSL)
   }
   
@@ -81,9 +88,8 @@ class MyCompiler(val DSL: ListDSLOps, name: String, offlineOptim: Boolean = fals
           |import scala.collection.mutable.ArrayBuffer""".stripMargin
         override def getTraitSignature(): Document = s"""
           |object $name {
-          |  def main(args: Array[String]): Unit = println(""".stripMargin
+          |  def main(args: Array[String]): Unit = """.stripMargin
         override def getFooter(): Document = s"""
-          |  )
           |}
           |""".stripMargin
       }
