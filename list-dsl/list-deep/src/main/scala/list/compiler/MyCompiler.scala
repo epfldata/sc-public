@@ -105,17 +105,6 @@ class MyCompiler(val DSL: ListDSLOps, name: String, offlineOptim: Boolean = fals
           else
             super.pardisTypeToString(t)
 
-        override def body(program: PardisProgram): Document = {
-          super.body(program) :/: {
-            val res = program.main.res
-            val ident = (res.tp: Any) match {
-              case IntType => "%d"
-              case tp => throw new Exception(s"Does not know how to print the type $tp!")
-            }
-            doc"""printf("$ident", $res);"""
-          }
-        }
-
         override def functionNodeToDocument(fun: FunctionNode[_]) = fun match {
           case dsl"Mem.alloc($size)" => {
             val tp = fun.tp.typeArguments(0)

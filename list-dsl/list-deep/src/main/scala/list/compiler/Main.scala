@@ -27,7 +27,7 @@ object Main extends App {
     if (ls2.size == 0) {
       List(1,2).size
     } else 0
-    (ls2.size)
+    printf("%d\n", ls2.size)
   """
   
   def pgrmC = dsl"""
@@ -45,7 +45,7 @@ object Main extends App {
   def pgrm = pgrmB
   
   {
-    import Context._  // needed to provide the `compile` methods with an implicit TypeRep
+    import Context.Predef._  // needed to provide the `compile` methods with an implicit TypeRep
     // Creates the directories if do not already exist!
     new java.io.File("generator-out/src/main/scala").mkdirs()
     new MyCompiler(Context, "GenApp", offlineOptim = false).compile(pgrm, "src/main/scala/GenApp")
