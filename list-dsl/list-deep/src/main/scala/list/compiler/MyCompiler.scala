@@ -62,13 +62,7 @@ class MyCompiler(val DSL: ListDSLOps, name: String, offlineOptim: Boolean = fals
   }
 
   if(cCodeGen) {
-    pipeline += new RecursiveRuleBasedTransformer(DSL) {
-      import DSL._
-      rewrite += rule {
-        case dsl"($i: Int).toDouble" =>
-          dsl"$i.asInstanceOf[Double]"
-      }
-    }
+    pipeline += new pardis.deep.scalalib.CIntTransformation(DSL)
     pipeline += new CoreLanguageToC(DSL)
   }
   
