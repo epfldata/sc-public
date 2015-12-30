@@ -94,6 +94,20 @@ class ListLowering(override val IR: ListDSLOps) extends RecursiveRuleBasedTransf
       
     case dsl"(${ArrFromLs(arr)}: List[A]).size" =>
       dsl"$arr.size"
+
+    case dsl"(${ArrFromLs(arr)}: List[A]).print" =>
+      val delim = {
+        val tp = arr.tp.typeArguments(0)
+        if(tp == typeRep[Int])
+          "%d, "
+        else
+          throw new Exception(s"Doesn't know how to print the type $tp")
+      }
+      dsl"""
+      printf("List: ")
+      for (x <- $arr) printf($delim, x)
+      printf("Size: %d\n", $arr.size)
+      """
       
     case dsl"shallow.List.zip[A,B] (${ArrFromLs(xs)}, ${ArrFromLs(ys)})" =>
       // TODO: fix:  for (i <- 0 until n) r append ( ($xs(i), $ys(i)) )

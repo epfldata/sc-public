@@ -25,6 +25,7 @@ trait ListOps extends Base with NumericOps with Tuple2Ops with SeqOps {
      def fold[B](init : Rep[B], f : Rep[((B,A) => B)])(implicit typeB : TypeRep[B]) : Rep[B] = listFold[A, B](self, init, f)(typeA, typeB)
      def size : Rep[Int] = listSize[A](self)(typeA)
      def +(that : Rep[A]) : Rep[List[A]] = list$plus[A](self, that)(typeA)
+     def print() : Rep[Unit] = listPrint[A](self)(typeA)
      def data : Rep[Seq[A]] = list_Field_Data[A](self)(typeA)
   }
   object List {
@@ -47,6 +48,8 @@ trait ListOps extends Base with NumericOps with Tuple2Ops with SeqOps {
   type ListSize[A] = ListIRs.ListSize[A]
   val List$plus = ListIRs.List$plus
   type List$plus[A] = ListIRs.List$plus[A]
+  val ListPrint = ListIRs.ListPrint
+  type ListPrint[A] = ListIRs.ListPrint[A]
   val List_Field_Data = ListIRs.List_Field_Data
   type List_Field_Data[A] = ListIRs.List_Field_Data[A]
   val ListApplyObject1 = ListIRs.ListApplyObject1
@@ -62,6 +65,7 @@ trait ListOps extends Base with NumericOps with Tuple2Ops with SeqOps {
    def listFold[A, B](self : Rep[List[A]], init : Rep[B], f : Rep[((B,A) => B)])(implicit typeA : TypeRep[A], typeB : TypeRep[B]) : Rep[B] = ListFold[A, B](self, init, f)
    def listSize[A](self : Rep[List[A]])(implicit typeA : TypeRep[A]) : Rep[Int] = ListSize[A](self)
    def list$plus[A](self : Rep[List[A]], that : Rep[A])(implicit typeA : TypeRep[A]) : Rep[List[A]] = List$plus[A](self, that)
+   def listPrint[A](self : Rep[List[A]])(implicit typeA : TypeRep[A]) : Rep[Unit] = ListPrint[A](self)
    def list_Field_Data[A](self : Rep[List[A]])(implicit typeA : TypeRep[A]) : Rep[Seq[A]] = List_Field_Data[A](self)
    def listApplyObject1[A](data : Rep[A]*)(implicit typeA : TypeRep[A]) : Rep[List[A]] = {
     val dataOutput = __liftSeq(data.toSeq)
@@ -152,6 +156,10 @@ object ListIRs extends Base {
 
   }
 
+  case class ListPrint[A](self : Rep[List[A]])(implicit val typeA : TypeRep[A]) extends FunctionDef[Unit](Some(self), "print", List(List())){
+    override def curriedConstructor = (copy[A] _)
+  }
+
   case class List_Field_Data[A](self : Rep[List[A]])(implicit val typeA : TypeRep[A]) extends FieldDef[Seq[A]](self, "data"){
     override def curriedConstructor = (copy[A] _)
     override def isPure = true
@@ -235,6 +243,11 @@ object ListQuasiNodes extends BaseExtIR {
       paramA.define(t.typeA)
       r }
   }
+  case class ListPrintExt[A](self : Rep[List[A]])(implicit val paramA : MaybeParamTag[A]) extends FunctionDef[ListPrint[A], Unit] {
+    override def nodeUnapply(t: ListPrint[A]): Option[Product] = (ListPrint.unapply(t): Option[Product]) map { r =>
+      paramA.define(t.typeA)
+      r }
+  }
   case class List_Field_DataExt[A](self : Rep[List[A]])(implicit val paramA : MaybeParamTag[A]) extends FunctionDef[List_Field_Data[A], Seq[A]] {
     override def nodeUnapply(t: List_Field_Data[A]): Option[Product] = (List_Field_Data.unapply(t): Option[Product]) map { r =>
       paramA.define(t.typeA)
@@ -272,6 +285,7 @@ trait ListExtOps extends BaseExt with NumericExtOps with Tuple2ExtOps with SeqEx
      def fold[B](init : Rep[B], f : Rep[((B,A) => B)])(implicit paramB : MaybeParamTag[B]) : Rep[B] = listFold[A, B](self, init, f)(paramA, paramB)
      def size : Rep[Int] = listSize[A](self)(paramA)
      def +(that : Rep[A]) : Rep[List[A]] = list$plus[A](self, that)(paramA)
+     def print() : Rep[Unit] = listPrint[A](self)(paramA)
      def data : Rep[Seq[A]] = list_Field_Data[A](self)(paramA)
   }
   object List {
@@ -289,6 +303,7 @@ trait ListExtOps extends BaseExt with NumericExtOps with Tuple2ExtOps with SeqEx
    def listFold[A, B](self : Rep[List[A]], init : Rep[B], f : Rep[((B,A) => B)])(implicit paramA : MaybeParamTag[A], paramB : MaybeParamTag[B]) : Rep[B] = ListFoldExt[A, B](self, init, f)
    def listSize[A](self : Rep[List[A]])(implicit paramA : MaybeParamTag[A]) : Rep[Int] = ListSizeExt[A](self)
    def list$plus[A](self : Rep[List[A]], that : Rep[A])(implicit paramA : MaybeParamTag[A]) : Rep[List[A]] = List$plusExt[A](self, that)
+   def listPrint[A](self : Rep[List[A]])(implicit paramA : MaybeParamTag[A]) : Rep[Unit] = ListPrintExt[A](self)
    def list_Field_Data[A](self : Rep[List[A]])(implicit paramA : MaybeParamTag[A]) : Rep[Seq[A]] = List_Field_DataExt[A](self)
    def listApplyObject1[A](data : Rep[A]*)(implicit paramA : MaybeParamTag[A]) : Rep[List[A]] = {
       val dataOutput = __liftSeq(data.toSeq)

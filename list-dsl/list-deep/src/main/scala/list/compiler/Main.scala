@@ -28,6 +28,7 @@ object Main extends App {
       List(1,2).size
     } else 0
     printf("%d\n", ls2.size)
+    ls2.print
   """
   
   def pgrmC = dsl"""

@@ -28,6 +28,14 @@ class List[A](val data: Seq[A]) { // TODO name it something else to avoid confus
   @pure
   //def +: (that: A): List[A] = new List(that +: data)
   def + (that: A): List[A] = new List(data :+ that)
+
+  def print(): Unit = {
+    printf("List: ")
+    for(e <- data) {
+      Predef.print(e + ", ")  
+    }
+    printf("Size: %d\n", size)
+  }
   
   override def toString: String = s"List(${data mkString ", "})"
 }
