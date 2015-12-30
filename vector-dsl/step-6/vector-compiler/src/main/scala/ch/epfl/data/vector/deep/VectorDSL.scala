@@ -5,6 +5,6 @@ package deep
 import sc.pardis.deep.scalalib._
 import sc.pardis.deep.scalalib.collection._
 
-trait VectorDSL extends VectorComponent with ScalaPredef with SeqOps with NumericOps
+trait VectorDSL extends VectorComponent with ScalaPredefOps with SeqOps with NumericOps
 
 trait VectorDSLOpt extends VectorDSL with VectorOpt with IntPartialEvaluation
