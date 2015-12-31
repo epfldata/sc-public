@@ -4,6 +4,7 @@ package compiler
 import ch.epfl.data.sc.pardis
 import pardis.optimization._
 import pardis.compiler._
+import pardis.deep.scalalib.ScalaCoreCCodeGen
 
 import deep._
 
@@ -88,7 +89,7 @@ class MyCompiler(val DSL: ListDSLOps, name: String, offlineOptim: Boolean = fals
           |""".stripMargin
       }
     } else {
-      new CASTCodeGenerator[ListDSLOps] {
+      new ScalaCoreCCodeGen with CASTCodeGenerator[ListDSLOps] {
         val IR = DSL
         import pardis.utils.document._
         import pardis.ir._
@@ -96,8 +97,6 @@ class MyCompiler(val DSL: ListDSLOps, name: String, offlineOptim: Boolean = fals
         import shallow._
 
         implicit val context = DSL
-
-        override val verbose: Boolean = true
 
         override def pardisTypeToString[A](t: PardisType[A]): String = 
           if(t.isArray) 
@@ -111,10 +110,6 @@ class MyCompiler(val DSL: ListDSLOps, name: String, offlineOptim: Boolean = fals
             doc"($tp *)malloc($size * sizeof($tp))"
           }
           case dsl"Mem.free($mem)" => doc"free($mem)"
-          case _ if fun.name.startsWith("unary_") /*&& fun.argss.size == 1 && fun.argss.head.size == 1*/ =>
-            val name = fun.name.substring("unary_".length)
-            val arg = fun.caller.get
-            doc"$name($arg)"
           case _ => super.functionNodeToDocument(fun)
         }
       }
