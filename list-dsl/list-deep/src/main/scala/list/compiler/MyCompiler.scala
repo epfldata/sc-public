@@ -4,8 +4,7 @@ package compiler
 import ch.epfl.data.sc.pardis
 import pardis.optimization._
 import pardis.compiler._
-import pardis.deep.scalalib._
-
+import pardis.deep.scalalib.ScalaCoreCCodeGen
 import deep._
 
 class MyCompiler(val DSL: ListDSLOps, name: String, offlineOptim: Boolean = false, lowering: Int = 0, cCodeGen: Boolean = false) extends Compiler[ListDSLOps] {
@@ -63,8 +62,7 @@ class MyCompiler(val DSL: ListDSLOps, name: String, offlineOptim: Boolean = fals
   }
 
   if(cCodeGen) {
-    pipeline += new pardis.deep.scalalib.CIntTransformation(DSL)
-    pipeline += new CoreLanguageToC(DSL)
+    pipeline += ScalaCoreToC
   }
   
   
@@ -77,14 +75,14 @@ class MyCompiler(val DSL: ListDSLOps, name: String, offlineOptim: Boolean = fals
       new ScalaCodeGenerator with ASTCodeGenerator[ListDSLOps] {
         val IR = DSL
         import pardis.utils.document.Document
-        override def getHeader(): Document = s"""
+        override def header(): Document = s"""
           |package list
           |import list.shallow._
           |import scala.collection.mutable.ArrayBuffer""".stripMargin
         override def getTraitSignature(): Document = s"""
           |object $name {
           |  def main(args: Array[String]): Unit = """.stripMargin
-        override def getFooter(): Document = s"""
+        override def footer(): Document = s"""
           |}
           |""".stripMargin
       }
