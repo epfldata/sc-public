@@ -19,7 +19,8 @@ object Main extends App {
     
     r.print
     printf("%d\n", zero)
-    printf("%d\n", ls.size)    
+    printf("%d\n", ls.size)
+    
   """
   
   def pgrmB = dsl"""
