@@ -372,7 +372,7 @@ rewrite += symRule {
 
 #### Allocation
 
-The main idea is to use an `arrays` buffer containing all arrays created within the current block,
+The main idea is to use an `array` buffer containing all arrays created within the current block,
 and to deallocate them at the end of the block:
 
 ```scala
@@ -400,12 +400,23 @@ extracted by `unapply` quasiquotes in one place and spliced back by `apply` quas
 
 ### Generating C Syntax
 
-[TODO]
+In order to stringify C code, we need to provide a C code generator in addition to the existing Scala code generator.
+To do so, whenever the user wants to use the C code generator, an instance of `CASTCodeGenerator` should be used.
+In order to stringify some core constructs of Scala core library to C code, SC already provides the `ScalaCoreCCodeGen` interface. In addition, we should guide the code generator how to generate C code for `Mem.alloc` and `Mem.free`. This is achieved by overriding the `functionNodeToDocument` which is shown in the following code:
 
+```scala
+override def functionNodeToDocument(fun: FunctionNode[_]) = fun match {
+  case dsl"Mem.alloc($size)" => {
+    val tp = fun.tp.typeArguments(0)
+    doc"($tp *)malloc($size * sizeof($tp))"
+  }
+  case dsl"Mem.free($mem)" => doc"free($mem)"
+  case _ => super.functionNodeToDocument(fun)
+}
+```
 
-
-
-
+Finally, by providing appropriate flags for switching between Scala code generation and C code generation, we
+can generate C code.
 
 ## Annex: Online Optimizations
 
