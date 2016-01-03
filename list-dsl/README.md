@@ -397,6 +397,14 @@ def postProcessBlock[T](b: Block[T]): Unit = {
 The reason for using an `Arr` case class is to easily capture and reuse implicit `TypeRep` evidences
 extracted by `unapply` quasiquotes in one place and spliced back by `apply` quasiquotes in another place.
 
+### Converting Scala nodes to C nodes
+
+In addition to lowering `ArrayBuffer` to `Array` and constructing memory management nodes, there are still
+language mismatches between Scala and C. For example, in Scala `if` statements can return values, whereas
+in C `if` statements can only have `Unit` (`void`) type (to be more precise conditionals `cond ? thenp : elsep`
+can return values other than `void` but we do not want to generate these expressions). To do so SC provides the 
+`CoreLanguageToC` transformer. Furthermore, for numeric types a similar transformation should be performed. This 
+is achieved by chaining `CIntTransformation` in the transformation pipeline.
 
 ### Generating C Syntax
 

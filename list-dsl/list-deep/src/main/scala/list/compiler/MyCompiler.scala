@@ -4,7 +4,7 @@ package compiler
 import ch.epfl.data.sc.pardis
 import pardis.optimization._
 import pardis.compiler._
-import pardis.deep.scalalib.ScalaCoreCCodeGen
+import pardis.deep.scalalib._
 
 import deep._
 
