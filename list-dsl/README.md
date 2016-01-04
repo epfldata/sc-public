@@ -440,7 +440,7 @@ as shown in the following code:
 
 ```scala
 override def functionNodeToDocument(fun: FunctionNode[_]) = fun match {
-  case dsl"Mem.alloc($size)" => {
+  case dsl"Mem.alloc[A]($size)" => {
     val tp = implicitly[TypeRep[A]]
     doc"($tp *)malloc($size * sizeof($tp))"
   }
