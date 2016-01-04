@@ -90,22 +90,26 @@ class MyCompiler(val DSL: ListDSLOps, name: String, offlineOptim: Boolean = fals
     } else {
       new ScalaCoreCCodeGen with CASTCodeGenerator[ListDSLOps] {
         val IR = DSL
+        import IR.Predef._
         import pardis.utils.document._
         import pardis.ir._
         import pardis.types._
         import shallow._
+        import pardis.quasi.TypeParameters._
+
+        val params = newTypeParams('A); import params._
 
         implicit val context = DSL
 
         override def pardisTypeToString[A](t: PardisType[A]): String = 
-          if(t.isArray) 
+          if (t.isArray)
             pardisTypeToString(t.typeArguments(0)) + "*"
           else
             super.pardisTypeToString(t)
 
         override def functionNodeToDocument(fun: FunctionNode[_]) = fun match {
-          case dsl"Mem.alloc($size)" => {
-            val tp = fun.tp.typeArguments(0)
+          case dsl"Mem.alloc[A]($size)" => {
+            val tp = implicitly[TypeRep[A]]
             doc"($tp *)malloc($size * sizeof($tp))"
           }
           case dsl"Mem.free($mem)" => doc"free($mem)"

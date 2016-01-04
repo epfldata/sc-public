@@ -14,7 +14,7 @@ import pardis.deep.scalalib.io._
 import ch.epfl.data.sc.pardis.quasi.anf.{ BaseExt, BaseExtIR }
 import ch.epfl.data.sc.pardis.quasi.TypeParameters.MaybeParamTag
 
-trait MemOps extends Base with NumericOps with ClassTagOps {  
+trait MemOps extends Base with ClassTagOps {  
   // Type representation
   val MemType = MemIRs.MemType
   implicit val typeMem: TypeRep[Mem] = MemType
@@ -41,7 +41,6 @@ trait MemOps extends Base with NumericOps with ClassTagOps {
   type Mem = list.shallow.Mem
 }
 object MemIRs extends Base {
-  import NumericIRs._
   import ClassTagIRs._
   // Type representation
   case object MemType extends TypeRep[Mem] {
@@ -82,7 +81,6 @@ trait MemPartialEvaluation extends MemComponent with BasePartialEvaluation {
 
 object MemQuasiNodes extends BaseExtIR {
   import MemIRs._
-  import NumericQuasiNodes._
   import ClassTagQuasiNodes._
   // case classes
   case class MemNewExt() extends FunctionDef[MemNew, Mem] {
@@ -102,11 +100,10 @@ object MemQuasiNodes extends BaseExtIR {
   type Mem = list.shallow.Mem
 }
 
-trait MemExtOps extends BaseExt with NumericExtOps with ClassTagExtOps {
+trait MemExtOps extends BaseExt with ClassTagExtOps {
   
   import MemQuasiNodes._
   import ch.epfl.data.sc.pardis.quasi.OverloadHackObj._
-  import NumericQuasiNodes._
   import ClassTagQuasiNodes._
   implicit class MemRep(self : Rep[Mem]) {
   }

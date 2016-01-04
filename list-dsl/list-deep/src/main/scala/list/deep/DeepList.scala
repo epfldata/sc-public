@@ -14,7 +14,7 @@ import pardis.deep.scalalib.io._
 import ch.epfl.data.sc.pardis.quasi.anf.{ BaseExt, BaseExtIR }
 import ch.epfl.data.sc.pardis.quasi.TypeParameters.MaybeParamTag
 
-trait ListOps extends Base with NumericOps with Tuple2Ops with SeqOps {  
+trait ListOps extends Base with Tuple2Ops with SeqOps {  
   // Type representation
   val ListType = ListIRs.ListType
   type ListType[A] = ListIRs.ListType[A]
@@ -76,7 +76,6 @@ trait ListOps extends Base with NumericOps with Tuple2Ops with SeqOps {
   type List[A] = list.shallow.List[A]
 }
 object ListIRs extends Base {
-  import NumericIRs._
   import Tuple2IRs._
   import SeqIRs._
   // Type representation
@@ -207,7 +206,6 @@ trait ListPartialEvaluation extends ListComponent with BasePartialEvaluation {
 
 object ListQuasiNodes extends BaseExtIR {
   import ListIRs._
-  import NumericQuasiNodes._
   import Tuple2QuasiNodes._
   import SeqQuasiNodes._
   // case classes
@@ -272,11 +270,10 @@ object ListQuasiNodes extends BaseExtIR {
   type List[A] = list.shallow.List[A]
 }
 
-trait ListExtOps extends BaseExt with NumericExtOps with Tuple2ExtOps with SeqExtOps {
+trait ListExtOps extends BaseExt with Tuple2ExtOps with SeqExtOps {
   
   import ListQuasiNodes._
   import ch.epfl.data.sc.pardis.quasi.OverloadHackObj._
-  import NumericQuasiNodes._
   import Tuple2QuasiNodes._
   import SeqQuasiNodes._
   implicit class ListRep[A](self : Rep[List[A]])(implicit paramA : MaybeParamTag[A]) {

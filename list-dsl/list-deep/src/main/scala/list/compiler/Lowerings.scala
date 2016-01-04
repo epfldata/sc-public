@@ -158,14 +158,13 @@ class ArrBufLowering(override val IR: ListDSLOps) extends RecursiveRuleBasedTran
   // Replacing foreach
   rewrite += symRule {
     case dsl"($arr: ArrayBuffer[A]) foreach $f" =>
-      val code = dsl"""
+      dsl"""
         var i = 0
         while (i < $arr.size) {
           $f($arr(i))
           i += 1
         }
       """
-      code: Rep[_]
   }
   
   

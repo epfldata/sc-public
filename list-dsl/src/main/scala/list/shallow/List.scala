@@ -4,7 +4,7 @@ package shallow
 import ch.epfl.data.sc.pardis.annotations._
 
 @deep
-@needs[Numeric[_] :: (_,_) :: Seq[_]]
+@needs[(_,_) :: Seq[_]]
 class List[A](val data: Seq[A]) { // TODO name it something else to avoid confusions with scala.List
   // FIXME: actually many of the functions are only *conditionally* pure
   
