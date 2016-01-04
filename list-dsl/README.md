@@ -33,7 +33,7 @@ object List {
 }
 ```
 
-See the full file [here](https://github.com/epfldata/sc-examples/blob/master/list-dsl/src/main/scala/list/shallow/List.scala).
+See the full file [here](src/main/scala/list/shallow/List.scala).
 
 The EDSL can already be used like a normal Scala library.
 It can be tested by typing `sbt console`, and importing `list.shallow._`, as in the following sbt session example:
@@ -125,7 +125,7 @@ generatorSettings ++ Seq(
 
 Don't forget the `generatePlugins` line to be able to use quasiquotation, and to specify correct `outputFolder` (the folder for generated files), `inputPackage` and `outputPackage` (package of the shallow library and package for the deep embedding to be generated).
 
-See [here](https://github.com/epfldata/sc-examples/blob/master/list-dsl/project/Build.scala) for the full build file of our example.
+See [here](project/Build.scala) for the full build file of our example.
 
 Now that SBT is set up, we can proceed to the actual code generation, by going to the main project root directory, and typing `sbt embed`.
 
@@ -161,7 +161,7 @@ def pgrm = dsl"""
 
 What the `dsl` macro does is to typecheck the shallow expression that we pass it, and transform it to deep embedding (_ListDSLOps_ if it is used in an expression, _ListDSLExtOps_ if it is used in a pattern).
 
-**Note**: If you have trouble with a quasiquote, there is a page dedicated to [debugging quasiquptes](https://github.com/epfldata/sc-examples/blob/master/doc/DebuggingQuasiquotes.md).
+**Note**: If you have trouble with a quasiquote, there is a page dedicated to [debugging quasiquotes](../doc/DebuggingQuasiquotes.md).
 
 Finally, in order to generate a program from this deep embedding, we have to extend `pardis.compiler.Compiler[ListDSLOps]` and define a code generator for it. This is going in the opposite direction as the `dsl` macro, i.e., from deep embedding to shallow embedding.
 
@@ -177,7 +177,7 @@ object MyCompiler extends Compiler[ListDSLOps] {
 MyCompiler.compile(pgrm, "src/main/scala/GeneratedApp")
 ```
 
-(See file [MyCompiler](https://github.com/epfldata/sc-examples/blob/master/list-dsl/list-deep/src/main/scala/list/compiler/MyCompiler.scala) for an example of definition for `codeGenerator`.)
+(See file [MyCompiler.scala](list-deep/src/main/scala/list/compiler/MyCompiler.scala) for an example of definition for `codeGenerator`.)
 
 
 
