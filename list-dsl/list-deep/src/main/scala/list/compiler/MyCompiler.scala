@@ -62,7 +62,7 @@ class MyCompiler(val DSL: ListDSLOps, name: String, offlineOptim: Boolean = fals
   }
 
   if(cCodeGen) {
-    assert(lowering > 2)
+    require(lowering > 2)
     pipeline += ScalaCoreToC
   }
   
