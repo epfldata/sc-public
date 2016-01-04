@@ -62,11 +62,12 @@ class MyCompiler(val DSL: ListDSLOps, name: String, offlineOptim: Boolean = fals
   }
 
   if(cCodeGen) {
+    assert(lowering > 2)
     pipeline += ScalaCoreToC
   }
   
   
-  // Outputting Scala code inside an executable wrapper:
+  // Outputting Scala and C code inside an executable wrapper:
   
   import pardis.prettyprinter._
   

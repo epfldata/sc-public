@@ -410,7 +410,7 @@ To do so SC provides the `ScalaCoreToC` transformer which should be added in the
 
 In order to stringify C code, we need to provide a C code generator in addition to the existing Scala code generator.
 To do so, whenever the user wants to use the C code generator, an instance of `CASTCodeGenerator` should be used.
-In order to stringify some core constructs of Scala core library to C code, SC already provides the `ScalaCoreCCodeGen` interface. In addition, we should guide the code generator how to generate C code for `Mem.alloc` and `Mem.free`. This is achieved by overriding the `functionNodeToDocument` which is shown in the following code:
+In order to stringify some core constructs of Scala core library to C code, SC already provides the `ScalaCoreCCodeGen` interface. In addition, we should guide the code generator how to generate C code for `Mem.alloc` and `Mem.free`. This is achieved by overriding the `functionNodeToDocument` in the C code generator object which is shown in the following code:
 
 ```scala
 override def functionNodeToDocument(fun: FunctionNode[_]) = fun match {
