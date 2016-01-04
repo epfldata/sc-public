@@ -1,12 +1,12 @@
 List Tutorial
 ===============
 
-An introduction to EDSL developement can be found in the [Development process](../doc/DevProcess.md) page.
+An introduction to Embedded Domain-Specific Language (EDSL) developement can be found on the [Development process](../doc/DevProcess.md) page.
 Here, we give an example of that methodology, with a simple library for manipulating lists (dubbed `list-dsl`).
 
 ## Step 1: Defining the Library
 
-The EDSL is first defined as a standard Scala library, that we will place in package `list/shallow`. It provides a `List` data type, and ways to apply common manipulations on it (mainly mapping, filtering and folding).
+The EDSL is first defined as a standard Scala library, that we will place in package `list.shallow`. It provides a `List` data type, and ways to apply common manipulations on it (mainly mapping, filtering and folding).
 
 
 ```scala
@@ -49,7 +49,7 @@ scala> List(1,2,3) map (_ + 1) map (_.toDouble)
 res0: list.shallow.List[Double] = List(2.0, 3.0, 4.0)
 ```
 
-One can also create an application using it, by adding a file with content similar to:
+One can also create a Scala application that uses it, by creating a file containing:
 
 ```scala
 package list.shallow
@@ -60,34 +60,38 @@ object Main extends App {
 }
 ```
 
+Such an application can be run by typing `sbt run`.
 
-Now, we'd like to have more power and be able to optimize/transform programs written in the DSL, as well as compile it to different targets. These require _deep embedding_.
+Now, we'd like to have more power and be able to optimize/transform programs written in the DSL,
+as well as compile it to different target languages.
+These require _deep embedding_.
 
 
 ## Step 2: Generating the Deep Embedding
 
 ### Specifying the Generation
 
-SC provides a way to deeply embed our shallow EDSL _automatically_, via an SBT plugin called Purgatory. We just need to add a few annotations to the library, and Purgatory will handle the rest:
+SC provides a way to deeply embed our shallow DSL _automatically_, via an SBT plugin called Purgatory. We just need to add a few annotations to the library, and Purgatory will handle the rest:
 
 ```scala
 @deep
-@needs[Numeric[_] :: (_,_) :: Seq[_]]
+@needs[(_,_) :: Seq[_]]
 class List[A](val data: Seq[A]) {
   ...
 ```
 
-Here, the `@deep` annotation tells Purgatory that we would like deep embedding of this class both for expression (_Exp_, the normal deep embedding) and extraction (_Ext_, used for pattern-matching with quasiquotes). In case you do not want to generate the _Ext_ or _Exp_ part, add the `@noDeepExt`/`@noDeepExp` annotation.
+Here, the `@deep` annotation tells Purgatory that we would like deep embedding of this class both for expression (_Exp_, the normal deep embedding) and extraction (_Ext_, used for pattern-matching with quasiquotes).
+In case you do not want to generate the _Ext_ or _Exp_ part, add the `@noDeepExt`/`@noDeepExp` annotation.
 
 `@needs` specifies which DSL features our DSL requires. Since our library uses 2-element tuples and they are not present in the default `Base` DSL embedded with SC, we need to add this requirement. If we omitted it, the generated code would not be able to compile.  
 Note that `(_,_)` is just syntax sugar for `Tuple2[_,_]`, and that a special `::` type, defined in `pardis.annotations`, is used to separate the types passed to `@needs`.
 
 <!-- Finally, `@noImplementation` tells Purgatory that for now we only need it to generate nodes for the definitions of our library/DSL, but not for their implementations. -->
 
-Now, we can also add effect annotations to help SC reason about transformations (e.g.: what code can be reordered).
+Now, we can also add effect annotations to help SC reason about transformations (e.g., what code can be reordered).
 In their current state, effect annotations are relatively coarse-grained:
 `@pure` indicates that the metod will only read its arguments (excluding `this`) and will not modify any non-local state;
-`@read` is used to indicate the method may read from the `this` parameter, and `global` that it may read globally-defined variables;
+`@read` is used to indicate the method may read from the `this` parameter, and `@global` that it may read globally-defined variables;
 when applied to a method, `@write` means that the function may write to `this`, and when applied to a parameter, that it may write to that parameters .
 
 The following shows how we annotated one method of our `List` DSL:
@@ -97,18 +101,19 @@ def map[B](f: A => B): List[B] = ...
 ```
 
 **Remark**: From a theoretical point of view, `map` is only conditionally pure, i.e., it is only pure if the function argument `f` it is passed is also pure.
-If you know, however, that no impure functions may be passed to `map` in the context of your DSL, you may still mark it `@pure`.
+If one knows, however, that no impure functions may be passed to `map` in the context of one's DSL, one may still mark it `@pure`.
 
 
 ### Recommended SBT Configuration
 
-In order to use Purgatory, you need to add it to your `plugins.sbt`:
+In order to use Purgatory, we need to add it to the `plugins.sbt` file:
 ```scala
 resolvers += Resolver.sonatypeRepo("snapshots")
 addSbtPlugin("ch.epfl.data" % "sc-purgatory-plugin" % "0.1")
 ```
 
-We recommend that you create an SBT sub-project for the deep embedding of the library. This is to prevent a wrongly-generated deep embedding from breaking compilation of the main project (which would prevent re-generating the deep embedding).
+We recommend that one create an SBT sub-project for the deep embedding of the library.
+This is to prevent a wrongly-generated deep embedding from breaking compilation of the main project (which would prevent re-generating the deep embedding).
 
 The important generation settings needed in the SBT configuration are the following:
 
@@ -123,7 +128,7 @@ generatorSettings ++ Seq(
 )
 ```
 
-Don't forget the `generatePlugins` line to be able to use quasiquotation, and to specify correct `outputFolder` (the folder for generated files), `inputPackage` and `outputPackage` (package of the shallow library and package for the deep embedding to be generated).
+One should not forget the `generatePlugins` line to be able to use quasiquotation, and to specify a correct `outputFolder` (the folder for generated files), `inputPackage` and `outputPackage` (package of the shallow library and package for the deep embedding to be generated).
 
 See [here](project/Build.scala) for the full build file of our example.
 
@@ -159,7 +164,7 @@ def pgrm = dsl"""
 """
 ```
 
-What the `dsl` macro does is to typecheck the shallow expression that we pass it, and transform it to deep embedding (_ListDSLOps_ if it is used in an expression, _ListDSLExtOps_ if it is used in a pattern).
+What the `dsl` macro does is typecheck the shallow expression that we pass it, and transform it to deep embedding nodes (_ListDSLOps_ if it is used in an expression, _ListDSLExtOps_ if it is used in a pattern).
 
 **Note**: If you have trouble with a quasiquote, there is a page dedicated to [debugging quasiquotes](../doc/DebuggingQuasiquotes.md).
 
@@ -173,11 +178,12 @@ object MyCompiler extends Compiler[ListDSLOps] {
   
   val codeGenerator = ...
 }
+
 // Compiling our program to proper Scala code:
 MyCompiler.compile(pgrm, "src/main/scala/GeneratedApp")
 ```
 
-(See file [MyCompiler.scala](list-deep/src/main/scala/list/compiler/MyCompiler.scala) for an example of definition for `codeGenerator`.)
+(See file [MyCompiler.scala](list-deep/src/main/scala/list/compiler/MyCompiler.scala) for an example definition of `codeGenerator`.)
 
 
 
@@ -189,9 +195,10 @@ MyCompiler.compile(pgrm, "src/main/scala/GeneratedApp")
 There are two main kinds of optimizations: online and offline.
 Online (or _local_) optimizations are applied continuously, as soon as a node in the deep embedding is created, while offline optimizations are only applied after constructing the full program in the deep embedding (and thus after online optimizations have been applied), in a predefined order.
 
-SC allows both kinds to be defined, but offline optimizations are significantly simpler as they require no knowledge of the deep embedding, and can be fully described using quasiquotes.
-Therefore, we will focus on them in the rest of this tutorial.
-For an explanation of online optimizations and an example, please refer to in the appendix.
+SC allows both kinds to be defined, but offline optimizations are simpler to start with.
+This is because they require no knowledge of the deep embedding, being able to be fully described using quasiquotes.
+Therefore, we will focus on them in this tutorial.
+For an explanation of online optimizations and an example, please refer to the appendix.
 
 
 
@@ -199,7 +206,7 @@ For an explanation of online optimizations and an example, please refer to in th
 ### The Compilation Pipeline
 
 In order to define offline transformations, we need to add them to the pipeline of the `MyCompiler` object defined earlier.
-In the following example, we extend `MyCompiler`'s pipeline with a transformer `MyTransformer` which definition is detailed later on:
+In the following example, we extend `MyCompiler`'s pipeline with a transformer `MyTransformer`, which definition is detailed below.
 
 ```scala
 import sc.pardis.optimization.RecursiveRuleBasedTransformer
@@ -231,7 +238,7 @@ class MyTransformer extends RuleBasedTransformer {
 ### A Simple Optimization
 
 Following is an optimization that rewrites any application of `size` to lists of one elements with the literal `1`.
-To do so, it matches program fragments of the form `List(x).size` (where `x` could be replaced by `_`, because we never use it), and generates a program fragment consisting of `1`:
+To do so, it matches program fragments of the form `List(x).size` and generates a program fragment consisting of `1`.
 
 ```scala
 import sc.pardis.optimization.RecursiveRuleBasedTransformer
@@ -243,14 +250,17 @@ class MyTransformer(DSL: ListDSLOps) extends RecursiveRuleBasedTransformer[ListD
 }
 ```
 
-In the body of the transformation above, the extracted variable `x` has type `Rep[?A]`, where `?A` is a type generated automatically by the quasiquote engine, representing the (unknown) type of the constructed list's elements. We could also specify the type explicitly, as in
+In the body of the transformation above, the extracted variable `x` has type `Rep[?A]`, where `?A` is a type generated automatically by the quasiquote engine, representing the (unknown) type of the constructed list's elements.
+We could also specify the type explicitly, as in
 `case dsl"List[Int]($x).size"`, in  which case `x` would have had type `Rep[Int]`.
+(Note that we could also write `$_` instead of `$x`, because we never use `x`.)
 
-**Caveat**: in its current implementation, quasiquotation will not check that the type of an extracted object matches the concrete type specified, so extarctor `dsl"List[Int]($x)` could extract a `List[String]`, and the type of `x` would be lying. (This will be corrected in the future.)
+**Caveat**: in its current implementation, quasiquotation will not check that the type of an extracted object matches the concrete type specified,
+so extarctor `dsl"List[Int]($x)` could extract a `List[String]`, and the type of `x` (`Rep[Int]`) would be lying. (This will be corrected in the future.)
 
 Note that a manual approach can be used to define the transformation, ie: without using quasiquotes and by manipulating IR nodes directly.
-However, this requires special knowledge about the compiler's internal details, and is out of the scope of this tutorial.
-Quasiquotes should be enough for most use cases.
+However, this requires special knowledge about the compiler's internals, and is out of the scope of this tutorial.
+Quasiquotes will be enough for most use cases.
 
 
 ### Generalizing the `size` Optimization
@@ -258,23 +268,33 @@ Quasiquotes should be enough for most use cases.
 In order to generalize that `size` optimization to any list size, we can use the vararg extraction syntax of quasiquotes:
 ```scala
   import IR.Predef._
-  rewrite += rule {  case dsl"List($xs*).size" => unit(xs.size)  }
+  rewrite += rule {  case dsl"List($xs*).size" => `  }
 ```
 
 In the code above, `xs` has type `Seq[Rep[A]]`, because it will match any actual list of arguments passed to the `List` constructor.
-Notice the call to `unit` (from `IR.Predef`), that takes a plain `Int` object and returns a `Rep[Int]` (of underlying class `Constant[Int]`). It is necessary, since a transformation is expected to return a value of type `Rep[_]`.
-This function expects an argument with the `TypeRep` type class; in our case, it expects an implicit value of type `TypeRep[Int]`. This value is also imported from `IR.Predef`. Other related implicits can be found in `sc.pardis.types.PardisTypeImplicits`.
+Notice that `xs.size` has type `Int`, so it can be spliced into a quasiquote. Writing `unit(xs.size)` would have the same effect as `unit(xs.size)`:
+the function `unit` (from `IR.Predef`) takes a plain `Int` object and returns a `Rep[Int]` (of underlying class `Constant[Int]`).
+It is necessary to return a `Rep[Int]` and not an `Int`, since any transformation is expected to return a value of type `Rep[_]`.
+
+In any case, lifting constants require the `TypeRep` type class; in our case, it expects an implicit value of type `TypeRep[Int]`.
+This value is also imported from `IR.Predef`. Other related implicits can be found in `sc.pardis.types.PardisTypeImplicits`.
+
+Finally, note that matching `case dsl"List($xs: _*).size"` is also possible, but has a different meaning.
+It will extract nodes created by Scala syntax `f(x: _*)`, where `x` is any sequence, of size not necessarily known statically.
+As a consequence, the type of `xs` will be `Rep[Seq[A]]` (and not `Seq[Rep[A]]`).
 
 
 ### Explicitly Polymorphic Transformations
 
-It is often useful to be able to refer to the (unknown) types found in a pattern-matched expression. In addition, quasiquotes will not always be able to generate existential types (like `?A` above), and may need help to typecheck the quasiquoted expressions.
+It is often useful to be able to refer to the generic types found in a pattern-matched expression.
+In addition, extraction quasiquotes will not always be able to generate existential types (like `?A` above), and may need help to typecheck the quasiquoted expressions.
 
-For this purpose, SC provides a macro `newTypeParams` that generates types which purpose is to be used for extraction and construction of expressions through quasiquotes.
+For this purpose, SC provides a macro `newTypeParams` that generates types and implicits whose purpose is to be used for extraction and construction of expressions through quasiquotes.
 It is used as follows:
 
 ```scala
 val params = newTypeParams('A, 'B, 'C); import params._
+
 rewrite += rule {
   case dsl"($ls: List[A]).map($f: A => B).map($g: B => C)" =>
     f : Rep[A => B]  // typechecks
@@ -282,12 +302,13 @@ rewrite += rule {
 }
 ```
 
-Notice how we don't need to specify the types again in the construction of the new expression. Scala infers all types for us in this context, i.e. as if we had written
-`dsl"($ls: List[A]).map[C]((x: A) => $g($f(x)))"`.
+Notice how we don't need to specify the types again in the construction of the new expression.
+Scala infers all types for us in this context, i.e., as if we had written `dsl"($ls: List[A]).map[C]((x: A) => $g($f(x)))"`.
 
 
 
-**Caveat**: Because of limitations in what extractor macros can do (and because we need to propagate implicit type representations from the extraction to the construction of expressions), the `newTypeParams` macro relies on some shared state (instantiated with its resulting object). For this reason, one should never share type parameters generated through this macro across transformations that may apply concurrently. For example, in an extraction of the form `case dsl"XXX" => x match { case dsl"YYY" => ... }`, the extractor `YYY` should use type parameters distinct from the ones used in `XXX`.
+**Caveat**: Because of limitations in what extractor macros can do (and because we need to propagate implicit type representations from the extraction to the construction of expressions),
+the `newTypeParams` macro relies on some shared state (instantiated with its application). For this reason, one should never share type parameters generated through this macro across transformations that may apply concurrently. For example, in an extraction of the form `case dsl"XXX" => x match { case dsl"YYY" => ... }`, the extractor `YYY` should use type parameters distinct from the ones used in `XXX`.
 This also means that recursive extractors should define their `newTypeParams` parameters locally (so each recursive invocation has a distinct state).
 
 
@@ -302,22 +323,22 @@ This also means that recursive extractors should define their `newTypeParams` pa
 #### Memory Management Nodes
 
 In order to compile our DSL to C, we must take into account the fact that C does not have garbage collection,
-and uses instead explicit allocation and and deallocation of memory using the `malloc`/`free` primitives.
+and uses instead stack allocation and explicit dynamic allocation/deallocation using the `malloc`/`free` primitives.
 
-Conversion of garbage-collected programs to explicit memory management is a very hard problem in its most general form.
+Conversion of garbage-collected programs to explicit memory management is a hard problem in its most general form.
 Here, we will only describe an ad-hoc technique to manage the memory of our `List` objects:
 for each `List` creation, we will convert it to an array allocation, and a corresponding deallocation (free) at the end of the current block.
 
 **Caveat**: This simplistic scheme is only sound as long as `List` objects do not escape the blocks they are defined in
 (for example, by being returned).
 The next logical step would be to perform escape analysis (which is an existing analysis in SC),
-either to prevent escape or to use a more elaborate scheme to handle escapes,
+either to prevent escape or to use a more elaborate scheme handling escapes,
 but this is out of the scope of this tutorial.
 
 In order to represent allocation/deallocation in the DSL, we add an object `Mem` that provide the corresponding nodes:
 ```scala
 @deep
-@needs[Numeric[_] :: ClassTag[_]]
+@needs[ClassTag[_]]
 class Mem
 object Mem {
   def alloc[T](size: Int): Array[T] = ???
@@ -333,6 +354,7 @@ in order for the deep representation of `Mem` to be included in the deep embeddi
 
 We split the corresponding lowering in two parts: one to lower our `ArrayBuffer`s to simple `Array`s,
 and one to implement explicit memory manegement of the `Array`s.
+
 
 #### Lowering to Array
 
@@ -372,14 +394,15 @@ rewrite += symRule {
 
 #### Allocation
 
-The main idea is to use an `array` buffer containing all arrays created within the current block,
+The main idea is to use a buffer `arrays` containing all arrays created within the current block,
 and to deallocate them at the end of the block:
 
 ```scala
 case class Arr[T](arr: Rep[Array[T]])(implicit val tp: TypeRep[T])
+var arrays = mutable.ArrayBuffer[Arr[_]]()
 
 rewrite += statement {
-  case sym -> (x @ dsl"new Array[A]($size)") => 
+  case sym -> dsl"new Array[A]($size)" => 
     val e = dsl"Mem.alloc[A]($size)"
     arrays += Arr(e)
     e
@@ -397,26 +420,28 @@ def postProcessBlock[T](b: Block[T]): Unit = {
 The reason for using an `Arr` case class is to easily capture and reuse implicit `TypeRep` evidences
 extracted by `unapply` quasiquotes in one place and spliced back by `apply` quasiquotes in another place.
 
+
 ### Converting Scala nodes to C nodes
 
 In addition to lowering `ArrayBuffer` to `Array` and constructing memory management nodes, there are still
-language mismatches between Scala and C. For example, in Scala `if` statements can return values, whereas
-in C `if` statements can only have `Unit` (`void`) type (to be more precise conditionals `cond ? thenp : elsep`
-can return values other than `void` but because of the complication for implementing a block of statements in 
-the branches, we do not generate these expressions). Furthermore, the data structures 
+language mismatches between Scala and C. For example, Scala `if` statements can return values, whereas
+in C `if` statements can only have `Unit` (`void`) type (to be more precise, conditionals `cond ? thenp : elsep`
+can return values other than `void` but cannot have proper blocks containing local variables in the branches). Furthermore, the data structures 
 of Scala core library should also be transformed to their corresponding C version. 
-To do so SC provides the `ScalaCoreToC` transformer which should be added in the transformation pipeline. 
+To do so SC provides the `ScalaCoreToC` transformer, which should be added in the transformation pipeline. 
+
 
 ### Generating C Syntax
 
 In order to stringify C code, we need to provide a C code generator in addition to the existing Scala code generator.
 To do so, whenever the user wants to use the C code generator, an instance of `CASTCodeGenerator` should be used.
-In order to stringify some core constructs of Scala core library to C code, SC already provides the `ScalaCoreCCodeGen` interface. In addition, we should guide the code generator how to generate C code for `Mem.alloc` and `Mem.free`. This is achieved by overriding the `functionNodeToDocument` in the C code generator object which is shown in the following code:
+In order to stringify some core constructs of Scala core library to C code, SC already provides the `ScalaCoreCCodeGen` interface. In addition, we should guide the code generator how to generate C code for `Mem.alloc` and `Mem.free`. This is achieved by overriding the `functionNodeToDocument` in the C code generator object,
+as shown in the following code:
 
 ```scala
 override def functionNodeToDocument(fun: FunctionNode[_]) = fun match {
   case dsl"Mem.alloc($size)" => {
-    val tp = fun.tp.typeArguments(0)
+    val tp = implicitly[TypeRep[A]]
     doc"($tp *)malloc($size * sizeof($tp))"
   }
   case dsl"Mem.free($mem)" => doc"free($mem)"
@@ -425,7 +450,7 @@ override def functionNodeToDocument(fun: FunctionNode[_]) = fun match {
 ```
 
 Finally, by providing appropriate flags for switching between Scala code generation and C code generation, we
-can generate C code.
+can have a modular compiler able to target the two languages.
 
 ## Annex: Online Optimizations
 
@@ -463,4 +488,4 @@ Note that the transformation above is essentially equivalent to the following, m
    }
 ```
 
-As you can see, it is easier to use quasiquotes to match deep embedding nodes, because they hide implementation details of the Intermediate Representation by providing the same language as the shallow library.
+As one can see, it is easier to use quasiquotes to match deep embedding nodes, because they hide implementation details of the Intermediate Representation by providing the same language as the shallow library.
