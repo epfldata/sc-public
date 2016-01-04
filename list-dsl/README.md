@@ -402,7 +402,8 @@ extracted by `unapply` quasiquotes in one place and spliced back by `apply` quas
 In addition to lowering `ArrayBuffer` to `Array` and constructing memory management nodes, there are still
 language mismatches between Scala and C. For example, in Scala `if` statements can return values, whereas
 in C `if` statements can only have `Unit` (`void`) type (to be more precise conditionals `cond ? thenp : elsep`
-can return values other than `void` but we do not want to generate these expressions). Furthermore, the data structures 
+can return values other than `void` but because of the complication for implementing a block of statements in 
+the branches, we do not generate these expressions). Furthermore, the data structures 
 of Scala core library should also be transformed to their corresponding C version. 
 To do so SC provides the `ScalaCoreToC` transformer which should be added in the transformation pipeline. 
 
