@@ -92,7 +92,7 @@ Warning:scalac: 3> (A) Generated:   {
 It is also possible to set the debugging level in any local context, by defining an implicit of a type that inherits from `ch.epfl.data.sc.pardis.quasi.MacroUtils.DebugInfo`.
 
 Example:
-```
+```scala
 {
   implicit val _ = ch.epfl.data.sc.pardis.quasi.MacroUtils.ApplyDebug
   dsl"""Symbol("ok")"""
