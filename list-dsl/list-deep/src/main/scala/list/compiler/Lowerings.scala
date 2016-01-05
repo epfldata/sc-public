@@ -36,7 +36,7 @@ class ListLowering(override val IR: ListDSLOps) extends RecursiveRuleBasedTransf
       }
       
     case dsl"shallow.List[A]()" =>
-      dsl"new ArrayBuffer[A]()"
+      dsl"new ArrayBuffer[A](0)"
     
   }
   
@@ -94,6 +94,18 @@ class ListLowering(override val IR: ListDSLOps) extends RecursiveRuleBasedTransf
       
     case dsl"(${ArrFromLs(arr)}: List[A]).size" =>
       dsl"$arr.size"
+
+    case dsl"(${ArrFromLs(arr)}: List[A]).print" =>
+      val tp = typeRep[A]
+      val format =
+        if (tp == typeRep[Int]) "%d, " else
+        if (tp == typeRep[Double]) "%f, " else
+        throw new Exception(s"Doesn't know how to print the type $tp")
+      dsl"""
+      printf("List: ")
+      for (x <- $arr) printf($format, x)
+      printf("Size: %d\n", $arr.size)
+      """
       
     case dsl"shallow.List.zip[A,B] (${ArrFromLs(xs)}, ${ArrFromLs(ys)})" =>
       // TODO: fix:  for (i <- 0 until n) r append ( ($xs(i), $ys(i)) )
@@ -146,14 +158,13 @@ class ArrBufLowering(override val IR: ListDSLOps) extends RecursiveRuleBasedTran
   // Replacing foreach
   rewrite += symRule {
     case dsl"($arr: ArrayBuffer[A]) foreach $f" =>
-      val code = dsl"""
+      dsl"""
         var i = 0
         while (i < $arr.size) {
           $f($arr(i))
           i += 1
         }
       """
-      code: Rep[_]
   }
   
   

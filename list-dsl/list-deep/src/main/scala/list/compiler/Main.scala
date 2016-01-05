@@ -17,7 +17,9 @@ object Main extends App {
     
     val r = ls map (_ + 1) map (_.toDouble)
     
-    (r, zero, ls.size)
+    r.print
+    printf("%d\n", zero)
+    printf("%d\n", ls.size)
     
   """
   
@@ -27,7 +29,10 @@ object Main extends App {
     if (ls2.size == 0) {
       List(1,2).size
     } else 0
-    (ls2, ls2.size)
+    printf("%d\n", ls2.size)
+    ls2.print
+    val ls3 = ((ls2 + 10) + 12)
+    ls3.print
   """
   
   def pgrmC = dsl"""
@@ -38,14 +43,15 @@ object Main extends App {
       val i = ls_i._2
       (ls + i, i + 1)
     })
-    
-    List zip (ls, indices._1)
+    ls.print
+    val ls2 = List.zip(ls, indices._1)
+    printf("%d\n", ls2.size)
   """
   
-  def pgrm = pgrmB
+  def pgrm = pgrmA
   
   {
-    import Context._  // needed to provide the `compile` methods with an implicit TypeRep
+    import Context.Predef._  // needed to provide the `compile` methods with an implicit TypeRep
     // Creates the directories if do not already exist!
     new java.io.File("generator-out/src/main/scala").mkdirs()
     new MyCompiler(Context, "GenApp", offlineOptim = false).compile(pgrm, "src/main/scala/GenApp")
@@ -54,6 +60,7 @@ object Main extends App {
     new MyCompiler(Context, "GenAppOptLow", offlineOptim = true, lowering = 1).compile(pgrm, "src/main/scala/GenAppOptLow")
     new MyCompiler(Context, "GenAppOptLowLow", offlineOptim = true, lowering = 2).compile(pgrm, "src/main/scala/GenAppOptLowLow")
     new MyCompiler(Context, "GenAppOptLowLowC", offlineOptim = true, lowering = 3).compile(pgrm, "src/main/scala/GenAppOptLowLowC")
+    new MyCompiler(Context, "Main", offlineOptim = true, lowering = 3, cCodeGen = true).compile(pgrm, "Main")
   }
   
 }

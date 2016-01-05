@@ -28,7 +28,8 @@ object Optim {
       
       // Replacing size on list constructors by a literal
       rewrite += symRule {
-        case dsl"List($xs*).size" => unit(xs.size)   // dsl"${xs.size}" // doesn't work (why?)
+        case dsl"List($xs*).size" => dsl"${xs.size}"
+        case dsl"List().size" => dsl"0" // TODO: remove distinction with `List($xs*)`
       }
       
       // Optimizing chained map applications; you can check it works by commenting the one in `Online`

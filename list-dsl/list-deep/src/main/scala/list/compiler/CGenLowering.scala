@@ -20,7 +20,7 @@ class CGenLowering(override val IR: ListDSLOps) extends RecursiveRuleBasedTransf
   val params = newTypeParams('A); import params._
 
   rewrite += statement {
-    case sym -> (x @ dsl"new Array[A]($size)") => 
+    case sym -> dsl"new Array[A]($size)" =>
       val e = dsl"Mem.alloc[A]($size)"     
       arrays += Arr(e)
       e
