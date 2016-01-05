@@ -32,7 +32,7 @@ class CGenLowering(override val IR: ListDSLOps) extends RecursiveRuleBasedTransf
 
   def postProcessBlock[T](b: Block[T]): Unit = {
     arrays foreach {
-        case a => // Note: a => doesn't work (for very obscure Scala reasons)
+        case a =>
           import a._
           dsl"Mem.free($arr)"
       }
