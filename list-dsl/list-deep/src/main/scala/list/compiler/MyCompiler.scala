@@ -17,7 +17,6 @@ class MyCompiler(val DSL: ListDSLOps, name: String, offlineOptim: Boolean = fals
     
     pipeline += PartiallyEvaluate 
     
-    //pipeline += new Optim.Offline.HighLevel(DSL)
     pipeline += new Optim.HighLevel(DSL)
     pipeline += new Optim.Generic(DSL)
     
@@ -52,7 +51,6 @@ class MyCompiler(val DSL: ListDSLOps, name: String, offlineOptim: Boolean = fals
       
       pipeline += PartiallyEvaluate
       
-      //pipeline += new Optim.Offline.Generic(DSL)
       pipeline += new Optim.Generic(DSL)
       
       pipeline += DCE

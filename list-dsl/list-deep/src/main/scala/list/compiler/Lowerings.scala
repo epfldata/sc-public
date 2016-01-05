@@ -49,20 +49,12 @@ class ListLowering(override val IR: ListDSLOps) extends RecursiveRuleBasedTransf
         for (x <- $arr) r append $f(x)
         r
       """
-      
-    /*
-    // NOTE: this works ('fold' is in turn transformed by this recursive transformer)
-    case dsl"($ls: List[A]).map($f: A => B)" =>
-      val code = dsl"$ls.fold(shallow.List[B](), (ls:List[B], e:A) => ls + $f(e))"
-      code: Rep[_]
-    */
     
   }
   
   // Replace map/filter, filter, fold, zip and +
   rewrite += symRule {
     
-    // problematic: will leave the 'map' effectful nodes (because 'map' is processed before)
     case dsl"(${ArrFromLs(arr)}: List[A]).map($f: A => B).filter($g: B => Boolean)" =>
       dsl"""
         val r = new ArrayBuffer[B]($arr.size)
@@ -108,9 +100,6 @@ class ListLowering(override val IR: ListDSLOps) extends RecursiveRuleBasedTransf
       """
       
     case dsl"shallow.List.zip[A,B] (${ArrFromLs(xs)}, ${ArrFromLs(ys)})" =>
-      // TODO: fix:  for (i <- 0 until n) r append ( ($xs(i), $ys(i)) )
-      
-      //  val n = $xs.size max $ys.size  // Int's mirror does not expose 'max'
       dsl"""
         val n: Int = ${max( dsl"$xs.size", dsl"$ys.size" )}
         val r = new ArrayBuffer[(A,B)](n)
@@ -119,7 +108,6 @@ class ListLowering(override val IR: ListDSLOps) extends RecursiveRuleBasedTransf
       """
       
   }
-  //}
   
   /** Our transformations transform Lists into ArrayBuffers, thus it is safe to view objects typed as Lists as ArrayBuffers.
     * Notice that since this extractor will be nested, we cannot use the same automatic type parameters.
@@ -183,7 +171,6 @@ class ArrayBufferToArray(override val IR: ListDSLOps) extends RecursiveRuleBased
   
   val params = newTypeParams('A); import params._
   
-  //rewrite += rule { case b @ Block(sts, r) => ... } // Doesn't work
   rewrite += symRule {
     
     case dsl"($arr: ArrayBuffer[A]) append $e" =>

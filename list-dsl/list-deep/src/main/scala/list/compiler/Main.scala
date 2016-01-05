@@ -5,9 +5,8 @@ import shallow._
 import deep._
 
 object Main extends App {
-   //implicit val _ = ch.epfl.data.sc.pardis.quasi.MacroUtils.ApplyDebug
   
-  implicit object Context extends ListDSLOpsPackaged // with Optim.Online // FIXME: does not work when put here... see `Notes.md`
+  implicit object Context extends ListDSLOpsPackaged
   
   def pgrmA = dsl"""
       
@@ -64,14 +63,4 @@ object Main extends App {
   }
   
 }
-
-/*
-Note: for pgrmC, none of these work:
-
-  //val (indices, sz) = ls.fold[(List[Int], Int)]((List(), 0), { case((ls, i), _) => (ls + i, i+1) })
-  //val indices = ls.fold[(List[Int], Int)]((List(), 0), { case((ls, i), _) => (ls + i, i+1) })
-  
-  //val indices = ls.fold [(List[Int], Int) ] ( (List(), 0), { (ls_i,_) => (ls_i._1 + ls_i._2, ls_i._2 + 1) } )
-    
-*/
 
