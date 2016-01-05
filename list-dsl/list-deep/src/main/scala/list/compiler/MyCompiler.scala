@@ -7,7 +7,7 @@ import pardis.compiler._
 import pardis.deep.scalalib.ScalaCoreCCodeGen
 import deep._
 
-class MyCompiler(val DSL: ListDSLOps, name: String, offlineOptim: Boolean = false, lowering: Int = 0, cCodeGen: Boolean = false) extends Compiler[ListDSLOps] {
+class MyCompiler(val DSL: ListDSLOps, name: String, offlineOptim: Boolean = false, lowering: Int = 0) extends Compiler[ListDSLOps] {
   
   // Pipeline Definition:
   
@@ -36,15 +36,6 @@ class MyCompiler(val DSL: ListDSLOps, name: String, offlineOptim: Boolean = fals
       
       pipeline += DCE
       
-      if (lowering > 2) {
-
-        pipeline += new ArrayBufferToArray(DSL)
-        
-        pipeline += new CGenLowering(DSL)
-        
-        pipeline += DCE
-        
-      }
     }
     
     if (offlineOptim) {
@@ -58,11 +49,6 @@ class MyCompiler(val DSL: ListDSLOps, name: String, offlineOptim: Boolean = fals
     }
     
   }
-
-  if(cCodeGen) {
-    require(lowering > 2)
-    pipeline += ScalaCoreToC
-  }
   
   
   // Outputting Scala and C code inside an executable wrapper:
@@ -70,7 +56,6 @@ class MyCompiler(val DSL: ListDSLOps, name: String, offlineOptim: Boolean = fals
   import pardis.prettyprinter._
   
   val codeGenerator = 
-    if(!cCodeGen) {
       new ScalaCodeGenerator with ASTCodeGenerator[ListDSLOps] {
         val IR = DSL
         import pardis.utils.document.Document
@@ -85,35 +70,5 @@ class MyCompiler(val DSL: ListDSLOps, name: String, offlineOptim: Boolean = fals
           |}
           |""".stripMargin
       }
-    } else {
-      new ScalaCoreCCodeGen with CASTCodeGenerator[ListDSLOps] {
-        val IR = DSL
-        import IR.Predef._
-        import pardis.utils.document._
-        import pardis.ir._
-        import pardis.types._
-        import shallow._
-        import pardis.quasi.TypeParameters._
-
-        val params = newTypeParams('A); import params._
-
-        implicit val context = DSL
-
-        override def pardisTypeToString[A](t: PardisType[A]): String = 
-          if (t.isArray)
-            pardisTypeToString(t.typeArguments(0)) + "*"
-          else
-            super.pardisTypeToString(t)
-
-        override def functionNodeToDocument(fun: FunctionNode[_]) = fun match {
-          case dsl"Mem.alloc[A]($size)" => {
-            val tp = implicitly[TypeRep[A]]
-            doc"($tp *)malloc($size * sizeof($tp))"
-          }
-          case dsl"Mem.free($mem)" => doc"free($mem)"
-          case _ => super.functionNodeToDocument(fun)
-        }
-      }
-    }
   
 }

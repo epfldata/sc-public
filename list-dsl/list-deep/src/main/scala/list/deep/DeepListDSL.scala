@@ -14,7 +14,7 @@ import pardis.deep.scalalib.io._
 import ch.epfl.data.sc.pardis.quasi.anf.{ BaseExt, BaseExtIR }
 import ch.epfl.data.sc.pardis.quasi.TypeParameters.MaybeParamTag
 
-trait ListDSLOps extends Base with ListOps with MemOps with ScalaCoreOps with ch.epfl.data.sc.pardis.quasi.anf.BaseQuasiExp {  
+trait ListDSLOps extends Base with ListOps with ScalaCoreOps with ch.epfl.data.sc.pardis.quasi.anf.BaseQuasiExp {  
   // Type representation
   val ListDSLType = ListDSLIRs.ListDSLType
   implicit val typeListDSL: TypeRep[ListDSL] = ListDSLType
@@ -34,7 +34,6 @@ trait ListDSLOps extends Base with ListOps with MemOps with ScalaCoreOps with ch
 }
 object ListDSLIRs extends Base {
   import ListIRs._
-  import MemIRs._
   import ScalaCoreIRs._
   // Type representation
   case object ListDSLType extends TypeRep[ListDSL] {
@@ -65,18 +64,16 @@ trait ListDSLPartialEvaluation extends ListDSLComponent with BasePartialEvaluati
 object ListDSLQuasiNodes extends BaseExtIR {
   import ListDSLIRs._
   import ListQuasiNodes._
-  import MemQuasiNodes._
   import ScalaCoreQuasiNodes._
   // case classes
   type ListDSL = list.shallow.ListDSL
 }
 
-trait ListDSLExtOps extends BaseExt with ListExtOps with MemExtOps with ScalaCoreExtOps with ch.epfl.data.sc.pardis.quasi.anf.BaseQuasiExt {
+trait ListDSLExtOps extends BaseExt with ListExtOps with ScalaCoreExtOps with ch.epfl.data.sc.pardis.quasi.anf.BaseQuasiExt {
   
   import ListDSLQuasiNodes._
   import ch.epfl.data.sc.pardis.quasi.OverloadHackObj._
   import ListQuasiNodes._
-  import MemQuasiNodes._
   import ScalaCoreQuasiNodes._
   implicit class ListDSLRep(self : Rep[ListDSL]) {
   }
