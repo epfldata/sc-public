@@ -14,8 +14,8 @@ object Build extends Build {
       libraryDependencies ++= Seq(
         "ch.epfl.data" % "sc-pardis-compiler_2.11" % SCVersion,
         "ch.epfl.lamp" % "scala-yinyang_2.11" % "0.2.0-SNAPSHOT"
-      )/*,
-      scalacOptions in Test ++= Seq("-optimize")*/
+      )
+      //, scalacOptions in Test ++= Seq("-optimize")
   )
   
   lazy val list = Project(id = "list", base = file("."), settings = defaultSettings ++ Seq(
