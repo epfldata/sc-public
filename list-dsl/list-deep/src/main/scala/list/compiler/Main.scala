@@ -55,8 +55,7 @@ object Main extends App {
     // Creates the directories if do not already exist!
     new java.io.File("generator-out/src/main/scala").mkdirs()
     
-    new MyCompiler(Context, "GenApp", offlineOptim = false).compile(pgrm, "src/main/scala/GenApp")
-    new MyCompiler(Context, "GenAppOpt", offlineOptim = true).compile(pgrm, "src/main/scala/GenAppOpt")
+    new MyCompiler(Context, "GenApp").compile(pgrm, "src/main/scala/GenApp")
   }
   
 }
