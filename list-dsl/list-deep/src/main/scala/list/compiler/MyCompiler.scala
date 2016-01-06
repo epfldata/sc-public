@@ -24,32 +24,6 @@ class MyCompiler(val DSL: ListDSLOps, name: String, offlineOptim: Boolean = fals
     
   }
   
-  if (lowering > 0) {
-    
-    pipeline += new ListLowering(DSL)
-    
-    pipeline += DCE
-    
-    if (lowering > 1) {
-      
-      pipeline += new ArrBufLowering(DSL)
-      
-      pipeline += DCE
-      
-    }
-    
-    if (offlineOptim) {
-      
-      pipeline += PartiallyEvaluate
-      
-      pipeline += new Optim.Generic(DSL)
-      
-      pipeline += DCE
-      
-    }
-    
-  }
-  
   
   // Outputting Scala and C code inside an executable wrapper:
   
