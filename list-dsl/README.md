@@ -331,7 +331,7 @@ Program transformations fall into two categories:
 
 
 Unlike optimizations, which are optional, each lowering leading to the target language must be applied exactly once.
-They will usually lower the program abstraction by ways of inlining, specialization and partial evaluation.
+Lowerings usually lower the program abstraction by ways of inlining, specialization and partial evaluation.
 
 
 ### Lowering `List` constructions
