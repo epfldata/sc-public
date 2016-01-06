@@ -54,7 +54,7 @@ This is how to define the program without QQ:
 
  * Making `List` static methods `@pure` creates an error (see code)
  
- * values don't seem to be ambedded (see `List.empty`)
+ * values don't seem to be embedded (see `List.empty`)
 
 
 
