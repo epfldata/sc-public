@@ -7,22 +7,7 @@ import pardis.compiler._
 import pardis.deep.scalalib.ScalaCoreCCodeGen
 import deep._
 
-class MyCompiler(val DSL: ListDSLOps, name: String, offlineOptim: Boolean = false) extends Compiler[ListDSLOps] {
-  
-  // Pipeline Definition:
-  
-  pipeline += DCE
-  
-  if (offlineOptim) {
-    
-    pipeline += PartiallyEvaluate 
-    
-    pipeline += new Optim.HighLevel(DSL)
-    pipeline += new Optim.Generic(DSL)
-    
-    pipeline += DCE
-    
-  }
+class MyCompiler(val DSL: ListDSLOps, name: String) extends Compiler[ListDSLOps] {
   
   
   // Outputting Scala and C code inside an executable wrapper:
