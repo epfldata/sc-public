@@ -7,7 +7,7 @@ import pardis.compiler._
 import pardis.deep.scalalib.ScalaCoreCCodeGen
 import deep._
 
-class MyCompiler(val DSL: ListDSLOps, name: String, offlineOptim: Boolean = false, lowering: Int = 0) extends Compiler[ListDSLOps] {
+class MyCompiler(val DSL: ListDSLOps, name: String, offlineOptim: Boolean = false) extends Compiler[ListDSLOps] {
   
   // Pipeline Definition:
   
@@ -21,32 +21,6 @@ class MyCompiler(val DSL: ListDSLOps, name: String, offlineOptim: Boolean = fals
     pipeline += new Optim.Generic(DSL)
     
     pipeline += DCE
-    
-  }
-  
-  if (lowering > 0) {
-    
-    pipeline += new ListLowering(DSL)
-    
-    pipeline += DCE
-    
-    if (lowering > 1) {
-      
-      pipeline += new ArrBufLowering(DSL)
-      
-      pipeline += DCE
-      
-    }
-    
-    if (offlineOptim) {
-      
-      pipeline += PartiallyEvaluate
-      
-      pipeline += new Optim.Generic(DSL)
-      
-      pipeline += DCE
-      
-    }
     
   }
   
