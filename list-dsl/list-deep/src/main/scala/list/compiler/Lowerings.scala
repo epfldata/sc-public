@@ -28,14 +28,14 @@ class ListLowering(override val IR: ListDSLOps) extends RecursiveRuleBasedTransf
   // Replacing List construction
   rewrite += symRule {
     
-    case dsl"shallow.List[A]($xs*)" =>
+    case dsl"List[A]($xs*)" =>
       block {
         val buffer = dsl"new ArrayBuffer[A](${unit(xs.size)})"
         for (x <- xs) dsl"$buffer append $x"
         buffer
       }
       
-    case dsl"shallow.List[A]()" =>
+    case dsl"List[A]()" =>
       dsl"new ArrayBuffer[A](0)"
     
   }
@@ -107,7 +107,7 @@ class ListLowering(override val IR: ListDSLOps) extends RecursiveRuleBasedTransf
       printf("Size: %d\n", $arr.size)
       """
       
-    case dsl"shallow.List.zip[A,B] (${ArrFromLs(xs)}, ${ArrFromLs(ys)})" =>
+    case dsl"List.zip[A,B] (${ArrFromLs(xs)}, ${ArrFromLs(ys)})" =>
       // TODO: fix:  for (i <- 0 until n) r append ( ($xs(i), $ys(i)) )
       
       //  val n = $xs.size max $ys.size  // Int's mirror does not expose 'max'
@@ -125,10 +125,8 @@ class ListLowering(override val IR: ListDSLOps) extends RecursiveRuleBasedTransf
     * Notice that since this extractor will be nested, we cannot use the same automatic type parameters.
     */
   object ArrFromLs {
-    val params = newTypeParams('X); import params._
-    
     def unapply[T](x: Rep[List[T]]): Option[Rep[ArrayBuffer[T]]] = x match {
-      case dsl"$ls: List[X]" =>
+      case dsl"$ls: List[T]" =>
         Some(ls.asInstanceOf[Rep[ArrayBuffer[T]]])
       case _ => None
     }
