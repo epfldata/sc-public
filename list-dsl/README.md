@@ -188,6 +188,7 @@ MyCompiler.compile(pgrm, "src/main/scala/GeneratedApp")
 
 
 
+
 ## Step 3: Defining Optimizations
 
 ### Difference Between Online and Offline Optimizations
@@ -316,7 +317,109 @@ This also means that recursive extractors should define their `newTypeParams` pa
 
 
 
-## Step 4: Compilation to C
+
+
+## Step 4: Defining Lowerings
+
+### Definition
+
+Program transformations fall into two categories:
+
+ - **Optimizations**, described in the above section.
+
+ - **Lowerings**, wherein a program represenation is translated to a lower level of abstraction, using constructs not necessarily available in the source language.
+
+
+Unlike optimizations, which are optional, each lowering leading to the target language must be applied exactly once.
+They will usually lower the program abstraction by ways of inlining, specialization and partial evaluation.
+
+
+### Lowering `List` constructions
+
+In our example, we would like to lower the high-level, immutable List data structure to a construct more amenable to performant compilation.
+We chose to use mutable `ArrayBuffer`s, available in the default Scala constructs of SC, as the lower-level representation.
+
+The first thing to do is to rewrite all constructions of `List[T]` to an appropriate construction of `ArrayBuffer[T]`.
+
+```scala
+rewrite += symRule {
+  case dsl"List[A]($xs*)" =>
+    val buffer = dsl"new ArrayBuffer[A](${unit(xs.size)})"
+    for (x <- xs) dsl"$buffer append $x"
+    buffer
+}
+```
+
+In the code above, we construct a `new ArrayBuffer[A](s)`, where `s` is the size to reserve for the elements it will contain.
+We then loop through the arguments `xs` and independently append them one by one to the buffer we just defined.
+
+Every execution of `dsl"$buffer append $x"` creates corresponding IR nodes in the current block and return a `Rep[Unit]`,
+that there is no need to do anything with.
+
+
+### Lowering `List` operations
+
+Lowering the operations on lists is done in a similar fashion, but with a catch:
+we have to match patterns such as `dsl"($ls: List[A]).map($f: A => B)"`, but such a pattern will expose an `ls` object of type `List[A]`,
+whereas we would like an `ArrayBuffer[A]`. Indeed, we know we have converted list construction nodes to array construction nodes,
+and would like to leverage this information (we want to use the `append` method available in `ArrayBuffer`).
+
+Here, we have to force SC to believe us and use an `asInstanceOf`.
+An elegant way of doing it is to define an auxilliary extractor that does the dirty job once and for all, limiting the potential for errors:
+
+```scala
+object ArrFromLs {
+  def unapply[T](x: Rep[List[T]]): Option[Rep[ArrayBuffer[T]]] = x match {
+    case dsl"$ls: List[T]" => Some(ls.asInstanceOf[Rep[ArrayBuffer[T]]])
+    case _ => None
+  }
+}
+```
+
+
+We can now write the `List.map` lowering as follows:
+
+```scala
+  case dsl"(${ArrFromLs(arr)}: List[A]).map($f: A => B)" =>
+    dsl"""
+      val r = new ArrayBuffer[B]($arr.size)
+      for (x <- $arr) r append $f(x)
+      r
+    """
+```
+
+
+Notice that contrary to the previous case (`List` construction), here the loop is _inside_ the quasiquotation block,
+because we do not know the size statically and wish to generate a loop with a statement inside,
+and not to loop and generate single statements (which corresponds to loop unrolling).
+
+
+### Keeping Types Consistent
+
+In several places, SC has to keep track of what are the types of the program's subexpressions.
+We have to tell it of the transformation we implemented, so typing information can be properly maintained,
+and the generated code will be consistent.
+
+This is done by overriding the `transformType` function to make it handle our type transformation:
+
+```scala
+override def transformType[T](implicit tp: TypeRep[T]): TypeRep[Any] = tp match {
+  case lst: IR.ListType[t] => IR.ArrayBufferType[t](lst.typeA).asInstanceOf[TypeRep[Any]]
+  case _ => super.transformType(tp)
+}
+```
+
+
+**Note**: It will not always be the case that a type transformation be performed throughout a program.
+Sometimes, the decision of which low-level construct to use to lower a higher-level one will be contextual.
+In such cases, it is necessary to construct a mapping during the analysis phase of the transformation
+that remembers to which type each symbol is converted to.
+This is outside the scope of this tutorial.
+
+
+
+
+## Step 5: Compilation to C
 
 ### Memory Management
 
