@@ -28,7 +28,7 @@ The transformations are applied when the functions corresponding to DSL construc
 Second, performing rewriting on already reified IR nodes, which we refer to as *offline trasformation*. These transformations
 are used whenever a global analysis is required for the program.
 
-References:
+## References
 
 [1] Hudak, Paul. "Building domain-specific embedded languages." ACM Computing Surveys (CSUR) 28.4es (1996): 196.
 
