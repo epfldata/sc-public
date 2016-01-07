@@ -51,8 +51,10 @@ object Main extends App {
   
   {
     import Context.Predef._  // needed to provide the `compile` methods with an implicit TypeRep
+    
     // Creates the directories if do not already exist!
     new java.io.File("generator-out/src/main/scala").mkdirs()
+    
     new MyCompiler(Context, "GenApp").compile(pgrm, "src/main/scala/GenApp")
   }
   
