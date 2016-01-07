@@ -2,7 +2,7 @@
 
 ## Organization of the repository (for the list tutorial)
 
-The master branch essentially contains:
+The `master` branch essentially contains:
 
  - The `README.md`, representing the tutorial text. Changes to that file can be committed to master.
  
@@ -19,6 +19,7 @@ You might get conflicts, but they should be easy to fix, and they should _appear
 You will need `--force` to push that branch to github. Only use `--force` (or `-f`) for **this branch only**.
 The history of the other branches should never need to be rewritten.
 
+After doing the rebasing, you can go to the `master` branch and run `./gensteps.sh`, which will re-generate the step folders according to the new state of `list-steps`, after which you just have to commit the changes.
 
 
 ## Context problems with quasiquotes
@@ -53,7 +54,7 @@ This is how to define the program without QQ:
 
  * Making `List` static methods `@pure` creates an error (see code)
  
- * values don't seem to be ambedded (see `List.empty`)
+ * values don't seem to be embedded (see `List.empty`)
 
 
 
