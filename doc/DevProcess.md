@@ -29,10 +29,17 @@ Second, performing rewriting on already reified IR nodes, which we refer to as *
 are used whenever a global analysis is required for the program.
 
 References:
+
 [1] Hudak, Paul. "Building domain-specific embedded languages." ACM Computing Surveys (CSUR) 28.4es (1996): 196.
+
 [2] Chafi, Hassan, et al. "Language virtualization for heterogeneous parallel computing." ACM Sigplan Notices. Vol. 45. No. 10. ACM, 2010.
+
 [3] Moors, Adriaan, et al. "Scala-virtualized." Proceedings of the ACM SIGPLAN 2012 workshop on Partial evaluation and program manipulation. ACM, 2012.
+
 [4] Jovanovic, Vojin, et al. "Yin-Yang: Concealing the deep embedding of DSLs." Proceedings of the 2014 International Conference on Generative Programming: Concepts and Experiences. ACM, 2014.
+
 [5] Carette, Jacques, et al. "Finally tagless, partially evaluated: Tagless staged interpreters for simpler typed languages." Journal of Functional Programming 19.05 (2009): 509-543.
+
 [6] Hofer, Christian, et al. "Polymorphic embedding of DSLs." Proceedings of the 7th international conference on Generative programming and component engineering. ACM, 2008.
+
 [7] Rompf, Tiark, and Martin Odersky. "Lightweight modular staging: a pragmatic approach to runtime code generation and compiled DSLs." Communications of the ACM 55.6 (2012): 121-130.
