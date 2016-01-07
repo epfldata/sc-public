@@ -101,7 +101,7 @@ def map[B](f: A => B): List[B] = ...
 ```
 
 **Remark**: From a theoretical point of view, `map` is only conditionally pure, i.e., it is only pure if the function argument `f` it is passed is also pure.
-If one knows, however, that no impure functions may be passed to `map` in the context of one's DSL, one may still mark it `@pure`. A more elaborate effect system will be introduced in a future version of SC (cf. issue https://github.com/epfldata/sc/issues/144).
+If one knows, however, that no impure functions may be passed to `map` in the context of one's DSL, one may still mark it `@pure`. A more elaborate effect system will be introduced in a future version of SC (cf. [sc/issues/144](https://github.com/epfldata/sc/issues/144)).
 
 
 ### Recommended SBT Configuration
@@ -257,7 +257,7 @@ We could also specify the type explicitly, as in
 (Note that we could also write `$_` instead of `$x`, because we never use `x`.)
 
 **Caveat**: in its current implementation, quasiquotation will not check that the type of an extracted object matches the concrete type specified,
-so extarctor `dsl"List[Int]($x)` could extract a `List[String]`, and the type of `x` (`Rep[Int]`) would be lying. (This will be corrected in the future, cf. issue https://github.com/epfldata/sc/issues/99 .)
+so extarctor `dsl"List[Int]($x)` could extract a `List[String]`, and the type of `x` (`Rep[Int]`) would be lying. (This will be corrected in the future, cf. [sc/issues/99](https://github.com/epfldata/sc/issues/99).)
 
 Note that a manual approach can be used to define the transformation, ie: without using quasiquotes and by manipulating IR nodes directly.
 However, this requires special knowledge about the compiler's internals, and is out of the scope of this tutorial.
