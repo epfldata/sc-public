@@ -327,7 +327,7 @@ Program transformations fall into two categories:
 
  - **Optimizations**, described in the above section.
 
- - **Lowerings**, wherein a program represenation is translated to a lower level of abstraction, using constructs not necessarily available in the source language.
+ - **Lowerings**, wherein a program representation is translated to a lower level of abstraction, using constructs not necessarily available in the source language.
 
 
 Unlike optimizations, which are optional, each lowering leading to the target language must be applied exactly once.
