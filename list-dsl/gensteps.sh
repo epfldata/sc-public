@@ -9,7 +9,10 @@ rm -rf step*
 
 check_step() {
 	echo "Checking out step$1"
-	git checkout step$1 --quiet
+	STEP=$1
+	DIFF=$((STEP-1))
+	# git checkout list-step$1 --quiet
+	git checkout list-steps~$DIFF --quiet
 	git checkout . --quiet
 	git rev-list --format=%B --max-count=1 HEAD
 	mkdir -p step$1
