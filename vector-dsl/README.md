@@ -81,19 +81,19 @@ Ever after adding this optimization still the statement for creating a zero vect
 ## Inlining and Lowering (Step 7)
 
 In order to get rid of the Vector abstraction in the generated code, one has to *lower* the Vector abstraction. 
-This achieved by *inlining* the Vector operations to their corresponding implementation. Similar to other 
+This is achieved by *inlining* the Vector operations to their corresponding implementation. Similar to other 
 transformations, inlining can be performed in both online and offline manner. 
 
 The `@onlineInliner` is for generating an online transformation trait called `VectorImplementations`. By mixing in 
 this trait, every Vector operation is inlined to its corresponding implementation. Although this transformation
-removes one level of indirection, it causes the high-level Vector optimizations to not be applied.
+removes one level of indirection, it causes missing the opportunities for the high-level Vector optimizations.
 
 The `@transformation` generates an offline transformation for inlining the Vector operations. In the compilation 
-pipeline this transformation should be placed in an appropriate place. This is done by adding the following line in
+pipeline this transformation should be placed in an appropriate place. This is done by adding the following line in the
 `VectorCompiler` class:
 `pipeline += new VectorTransformation(DSL)`
 
-Furthermore, as the operations on lower level data structures are needed, one has to import these data structures.
-`@needs` is the annotation for specifying the list of types that the current data structures is dependent on.
+Furthermore, as the operations on the lower level data structures are needed, one has to import these data structures.
+`@needs` is the annotation for specifying the list of types that the current data structure is dependent on.
 Further optimizations can be added to the compilation pipeline in the `VectorCompiler` class. All these tasks
-are done in [`Step7`](https://github.com/epfldata/sc-examples/tree/master/vector-dsl/step-7).
+are done in [`Step7`](step-7).
