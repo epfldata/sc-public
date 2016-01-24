@@ -25,18 +25,19 @@ res1: Int = 26
 
 ## Vector Compiler (Step 2)
 
-For converting this interpreter to a compiler, we should use the Purgatory compiler plugin. For using this compiler plugin, the corresponding sbt plugin is used. After adding `generatorSettings` to the settings of this project, 3 parameters should be configured for Purgatory compiler plugin:
+For converting this interpreter to a compiler, we use the Purgatory compiler plugin to automatically generate the boilerplate code
+related to the compilation process. For using this compiler plugin, an sbt plugin is provided by SC. After adding `generatorSettings` to the settings of this project, 3 parameters should be configured for the Purgatory compiler plugin:
  * `outputFolder`: The common parent folder of generated deep classes
  * `inputPackage`: The common parent package of shallow classes
  * `outputPackage`: The common parent package of generated deep classes
 By running `embed` command in the sbt console of the `vector-interpreter` project, the deep classes are generated.
-The classes that we are interested to generate their corresponding deep classes should be annotated with `@deep` annotation. These classes will be put to the corresponding DSL compiler project.
+The classes that we are interested to generate their corresponding deep classes should be annotated with `@deep` annotation. These classes will be placed in the corresponding DSL compiler project.
 
 The project `vector-compiler` is the compiler project for this Vector DSL. `DeepVector` file represents the deep embedding interface defined for the shallow class `Vector`. In order to use the deep interfaces, one should combine all deep interfaces which are needed for applications. This task is done in `VectorDSL` trait, which combines `VectorComponent`, which is the deep embedding interface for the `Vector` class, with the `ScalaPredefOps` interface which represents the deep embedding interface of the methods defined in the `Predef` module of Scala, such as `println`. 
 
-The core part of the compiler which receives an input and applies optimizations and finally generates codes is `VectorCompiler` class. By adding a transformation to the pipeline, we can specify different optimizations which should be applied. Furthermore, for the compiler we should specify a code generator which is defined in `VectorScalaGenerator` class.
+The core part of the compiler is the `VectorCompiler` class. This class receives an input and applies optimizations and finally peforms code generation. By adding a transformation to the pipeline, we can specify different optimizations which should be applied. Furthermore, for the compiler we should specify a code generator which is defined in `VectorScalaGenerator` class.
 
-[`Step2`](https://github.com/epfldata/sc-examples/tree/master/vector-dsl/step-2) shows how to define `vector-compiler` and how to annotate the `Vector` class.
+[`Step2`](step-2) shows how to define `vector-compiler` and how to annotate the `Vector` class.
 
 You can run the compiler from the console as follows. Start sbt and enter `project vector-compiler` and then `console`. Then copy-paste the following code.
 ```scala
@@ -58,11 +59,11 @@ The output file is written to the `generator-out` directory.
 
 ## Vector Application (Steps 3 & 4)
 
-The project `vector-application` is the project which uses both projects `vector-interpreter` and `vector-compiler` in order to either interpret or compile the input applications. For interpreting the program, the program uses the Vector library in a normal manner. This the program produces the result of computation whenever it is executed. For compiling the program, we use the polymorphic embedding approach to lift the program. However, as we need operations over `Seq` and `Int`, the `VectorDSL` should mix-in the corresponding deep interfaces (`IntOps` and `SeqOps`). Then, we invoke the `compile` method of `VectorCompiler` over the lifted program. This will generate a Scala program out of this program in the `generator-out` folder. 
+The project `vector-application` is the project which uses both projects `vector-interpreter` and `vector-compiler` in order to either interpret or compile the input applications. For interpreting the program, the program uses the Vector library in a normal manner. This way the program produces the result of computation whenever it is executed. For compiling the program, we use the polymorphic embedding approach to lift the program. However, as we need operations over `Seq` and `Int`, the `VectorDSL` should mix-in the corresponding deep interfaces (`IntOps` and `SeqOps`). Then, we pass the lifted program to the `compile` method of `VectorCompiler`. This will generate a Scala program out of this program in the `generator-out` folder. 
 
-`Example1` file shows the interpretation under the name `Example1Shallow` and the compilation under the name `Example1Deep`. [`Step3`](https://github.com/epfldata/sc-examples/tree/master/vector-dsl/step-3) shows how we implemented this example.
+`Example1` file shows the interpretation under the name `Example1Shallow` and the compilation under the name `Example1Deep`. [`Step3`](step-3) shows how we implemented this example.
 
-An alternative for compiling a program would be to write the program as we write in the shallow interface, and use Yin-Yang to lift it to the corresponding deep program. The shallow program is written inside the `dsl` macro. This macro uses Yin-Yang in order to convert the block inside it into the corresponding block in the deep embedding interface. This process is done in [`Step4`](https://github.com/epfldata/sc-examples/tree/master/vector-dsl/step-4). 
+An alternative for compiling a program would be to write the program as we write in the shallow interface, and use Yin-Yang to lift it to the corresponding deep program. The shallow program is written inside the `dsl` macro. This macro uses Yin-Yang in order to convert the block inside it into the corresponding block in the deep embedding interface. This process is done in [`Step4`](step-4). 
 
 ## Vector Optimization (Steps 5 & 6)
 
