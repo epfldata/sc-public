@@ -67,16 +67,16 @@ An alternative for compiling a program would be to write the program as we write
 
 ## Vector Optimization (Steps 5 & 6)
 
-There are two approaches for defining optimizations. 1) Online transformations: which are using smart constructors in order to check if some rewrite can be applied or not. This transformation is applied while the IR nodes of a program are being reified. 2) Offline transformations: which examine the application of different rewrite rules whenever the IR nodes are already reified. This class of transformations are chained using `pipeline` construct defined in `Compiler` classes (in the case of Vector DSL, `VectorCompiler` class).
+There are two approaches for defining optimizations. 1) Online transformations: which are using smart constructors in order to check if some rewrite can be applied or not. This transformation is applied while the IR nodes of a program are being reified. 2) Offline transformations: which examine the application of different rewrite rules whenever the IR nodes are already reified. This class of transformations are chained using the `pipeline` construct defined in the `VectorCompiler` class.
 
-In the file `VectorOpt` we have defined a domain-specific optimization for addition of two vectors using online transformation. Whenever a vector addition node is reified, we check if one of two vectors is zero, there is no more need to create an addition node. It is enough to return the non-zero node. To combine the optimized interfaces, we define `VectorDSLOpt` which combines all optimization interfaces.
+In the file `VectorOpt` we have defined a domain-specific optimization for addition of two vectors using online transformation. Whenever a vector addition node is reified, we check if one of two vectors is zero. In such a case, there is no more need to create an addition node and returning the non-zero node is sufficient. To combine the optimized interfaces, we define `VectorDSLOpt` which combines all optimization interfaces.
 
-For applying this optimizations for input applications, there are again two ways. 1) Using polymorphic embedding on trait `VectorDSLOpt` and compile the lifted program. 2) Use `dslOpt` macro defined using Yin-Yang. We define `Example2` which adds a zero vector with another vector. This is done in [`Step5`](https://github.com/epfldata/sc-examples/tree/master/vector-dsl/step-5).
+For applying these optimizations for input applications, there are two ways. 1) Using the polymorphic embedding trait `VectorDSLOpt` and compile the lifted program. 2) Use the `dslOpt` macro defined using Yin-Yang. [`Step5`](step-5) defines `Example2` which adds a zero vector with another vector.
 
 After generating the code for one of the applications in which the mentioned optimization is applicable, we found that although the zero vector is not used, the code for creating it still exists. The reason is that the dead code elimination has not been applied to this program. For applying this optimization we add the following line in `VectorCompiler` class:
 `pipeline += DCE`
 
-Ever after adding this optimization still the zero vector statement is not removed. The reason is that the compiler thinks that the creation of a zero vector is an effectful computation. In order to guide the pureness of this method, we use `@pure` annotation on this method. After rerunning the `embed` command in `vector-interpreter` project, the generated program will no longer contain any zero vector. This is done in [`Step6`](https://github.com/epfldata/sc-examples/tree/master/vector-dsl/step-6).
+Ever after adding this optimization still the statement for creating a zero vector is not removed. This is because the compiler thinks that the creation of a zero vector is an effectful computation. In order to guide the pureness of this method, we use the `@pure` annotation on this method. After rerunning the `embed` command in `vector-interpreter` project, the generated program will no longer contain any zero vector. This is done in [`Step6`](step-6).
 
 ## Inlining and Lowering (Step 7)
 
