@@ -1,13 +1,15 @@
 Vector Tutorial
 ===============
 
-As we discussed in development process, there are two main phases for defining an EDSL in Scala. First, we should define an interpreter for the DSL in Scala. Second, a compiler should be defined for this DSL in Scala. The compiler definition involves defining IR nodes, optimizations and code generation for the given DSL.
+As we discussed in the development process, there are two main phases for defining an EDSL in Scala. First, we should define an interpreter for the DSL in Scala. Second, a compiler should be defined for this DSL in Scala. The compiler definition involves defining IR nodes, optimizations and code generation for the given DSL.
 
 ## Vector Interpreter (Step 1)
 
-Defining an interpreter does not require Pardis compiler. In other words, its definition can be written standalone. However, for overriding language constructs of Scala, we propose using Yin-Yang. This interpreter is defined as a project named as `vector-interpreter`. As we do not override any language feature of Scala, this project is not dependent on Yin-Yang.
+Defining an interpreter does not require Pardis compiler. In other words, its definition can be written standalone without any 
+dependancy on SC. However, for overriding language constructs of Scala, we propose using Yin-Yang. This interpreter is defined as a
+project named as `vector-interpreter`. As we do not override any language feature of Scala, this project is not dependent on Yin-Yang.
 
-The `Vector` data-structure is implemented by defining the [corresponding class](https://github.com/epfldata/sc-examples/blob/master/vector-interpreter/src/main/scala/ch/epfl/data/vector/shallow/Vector.scala) for it. Different operations on this data-structure are defined as methods of this class. [`Step1`](https://github.com/epfldata/sc-examples/tree/master/vector-dsl/step-1) shows how to define `vector-interpreter` and the `Vector` class.
+The `Vector` data structure is implemented by defining the [corresponding class](step-1/vector-interpreter/src/main/scala/ch/epfl/data/vector/shallow/Vector.scala) for it. Different operations on this data-structure are defined as methods of this class. [`Step1`](step-1) shows how to define `vector-interpreter` and the `Vector` class.
 
 You can try out the `Vector` data structure in the Scala REPL as follows. Start sbt, enter `project vector-interpreter`, and then run `console`. Then enter, e.g.,
 ```scala
