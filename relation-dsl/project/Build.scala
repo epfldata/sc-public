@@ -12,6 +12,8 @@ object Build extends Build {
       scalaVersion := "2.11.7",
       resolvers += Resolver.sonatypeRepo("snapshots"),
       libraryDependencies ++= Seq(
+        "junit" % "junit-dep" % "4.10" % "test",
+        "org.scalatest" % "scalatest_2.11" % "2.2.0" % "test",
         "ch.epfl.data" % "sc-pardis-compiler_2.11" % SCVersion,
         "ch.epfl.lamp" % "scala-yinyang_2.11" % "0.2.0-SNAPSHOT"
       )
