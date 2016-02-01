@@ -8,8 +8,7 @@ object Main extends App {
   
   implicit object Context extends RelationDSLOpsPackaged
   
-  def pgrmA = dsl"""
-      
+  def pgrmA = dsl""" 
     val schema = Schema("number", "digit")
     val R = Relation.scan("data/R.csv", schema, "|")
     val selR = R.select(x => x.getField("number") == "one")
@@ -31,7 +30,5 @@ object Main extends App {
     // new MyCompiler(Context, "GenAppOptLowLow", offlineOptim = true, lowering = 2).compile(pgrm, "src/main/scala/GenAppOptLowLow")
     // new MyCompiler(Context, "GenAppOptLowLowC", offlineOptim = true, lowering = 3).compile(pgrm, "src/main/scala/GenAppOptLowLowC")
     // new MyCompiler(Context, "Main", offlineOptim = true, lowering = 3, cCodeGen = true).compile(pgrm, "Main")
-  }
-  
+  }  
 }
-

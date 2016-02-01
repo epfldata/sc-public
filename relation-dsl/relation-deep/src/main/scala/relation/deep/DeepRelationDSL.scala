@@ -14,7 +14,7 @@ import pardis.deep.scalalib.io._
 import ch.epfl.data.sc.pardis.quasi.anf.{ BaseExt, BaseExtIR }
 import ch.epfl.data.sc.pardis.quasi.TypeParameters.MaybeParamTag
 
-trait RelationDSLOps extends Base with RelationOps with ScalaCoreOps with ch.epfl.data.sc.pardis.quasi.anf.BaseQuasiExp {  
+trait RelationDSLOps extends Base with RelationOps with RelationScannerOps with ArrayOps with ScalaCoreOps with ch.epfl.data.sc.pardis.quasi.anf.BaseQuasiExp {  
   // Type representation
   val RelationDSLType = RelationDSLIRs.RelationDSLType
   implicit val typeRelationDSL: TypeRep[RelationDSL] = RelationDSLType
@@ -34,6 +34,8 @@ trait RelationDSLOps extends Base with RelationOps with ScalaCoreOps with ch.epf
 }
 object RelationDSLIRs extends Base {
   import RelationIRs._
+  import RelationScannerIRs._
+  import ArrayIRs._
   import ScalaCoreIRs._
   // Type representation
   case object RelationDSLType extends TypeRep[RelationDSL] {
@@ -64,16 +66,20 @@ trait RelationDSLPartialEvaluation extends RelationDSLComponent with BasePartial
 object RelationDSLQuasiNodes extends BaseExtIR {
   import RelationDSLIRs._
   import RelationQuasiNodes._
+  import RelationScannerQuasiNodes._
+  import ArrayQuasiNodes._
   import ScalaCoreQuasiNodes._
   // case classes
   type RelationDSL = relation.shallow.RelationDSL
 }
 
-trait RelationDSLExtOps extends BaseExt with RelationExtOps with ScalaCoreExtOps with ch.epfl.data.sc.pardis.quasi.anf.BaseQuasiExt {
+trait RelationDSLExtOps extends BaseExt with RelationExtOps with RelationScannerExtOps with ArrayExtOps with ScalaCoreExtOps with ch.epfl.data.sc.pardis.quasi.anf.BaseQuasiExt {
   
   import RelationDSLQuasiNodes._
   import ch.epfl.data.sc.pardis.quasi.OverloadHackObj._
   import RelationQuasiNodes._
+  import RelationScannerQuasiNodes._
+  import ArrayQuasiNodes._
   import ScalaCoreQuasiNodes._
   implicit class RelationDSLRep(self : Rep[RelationDSL]) {
   }

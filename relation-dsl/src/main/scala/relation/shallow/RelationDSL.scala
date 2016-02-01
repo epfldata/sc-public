@@ -7,5 +7,5 @@ import ch.epfl.data.sc.pardis.shallow.scalalib._
 @language
 @deep
 @quasiquotation
-@needs[Relation :: ScalaCore]
+@needs[Relation :: RelationScanner :: Array[_] :: ScalaCore]
 trait RelationDSL
