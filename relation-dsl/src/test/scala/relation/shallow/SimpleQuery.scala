@@ -7,13 +7,13 @@ import Matchers._
 class SimpleQuery extends FlatSpec {
 	val RSchema = new Schema(List("number", "digit"))
 	val RFile = "data/R.csv"
-	val RScan = Relation.scan(RFile, RSchema, '|')
+	val RScan = Relation.scan(RFile, RSchema, "|")
 
 	"Scanning R" should "work" in {
 		RScan.toString should be {
-""""one", 1
-"two", 2
-"three", 3
+"""one, 1
+two, 2
+three, 3
 """
 		}
 	}
@@ -22,8 +22,8 @@ class SimpleQuery extends FlatSpec {
 
 	"Selecting R" should "work" in {
 		RSelect.toString should be {
-""""one", 1
-"three", 3
+"""one, 1
+three, 3
 """
 		}
 	}
@@ -33,9 +33,9 @@ class SimpleQuery extends FlatSpec {
 
 	"Projecting R" should "work" in {
 		RProject.toString should be {
-""""one"
-"two"
-"three"
+"""one
+two
+three
 """
 		}
 	}
