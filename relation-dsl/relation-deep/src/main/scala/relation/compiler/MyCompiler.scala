@@ -12,6 +12,10 @@ class MyCompiler(val DSL: RelationDSLOpsPackaged, name: String, offlineOptim: Bo
   // Pipeline Definition:
   
   pipeline += DCE
+
+  pipeline += new SchemaLowering(DSL)
+
+  pipeline += DCE
   
   if(cCodeGen) {
     require(lowering > 2)
