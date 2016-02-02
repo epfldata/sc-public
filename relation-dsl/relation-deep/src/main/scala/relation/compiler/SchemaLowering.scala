@@ -7,6 +7,7 @@ import ch.epfl.data.sc.pardis
 import pardis.optimization.RecursiveRuleBasedTransformer
 import pardis.quasi.TypeParameters._
 import pardis.types._
+import PardisTypeImplicits._
 import pardis.ir._
 
 import relation.deep.RelationDSLOpsPackaged
@@ -17,7 +18,7 @@ class SchemaLowering(override val IR: RelationDSLOpsPackaged) extends RecursiveR
   implicit val ctx = IR // for quasiquotes
   
   import IR.Predef._
-  import IR.__new
+  import IR.{__new, field, __lambda}
 
   def convertToStaticSchema(schema: Rep[Schema]): Schema = {
   	schema match {
@@ -54,6 +55,21 @@ class SchemaLowering(override val IR: RelationDSLOpsPackaged) extends RecursiveR
   			}
   			arr
   		""".asInstanceOf[Rep[Any]]
+  }
+
+  rewrite += symRule {
+  	case dsl"(${ArrFromRelation(arr)}: Relation).project($schema)" => 
+  		val constantSchema = convertToStaticSchema(schema)
+
+  		implicit val recTp: TypeRep[Rec] = new RecordType[Rec](getClassTag, None)
+  		def copyRecord(e: Rep[Any]): Rep[Rec] = __new[Rec](constantSchema.columns.map(column => (column, false, field[String](e, column))): _*)
+  		val newArr = dsl"new Array[Rec]($arr.length)"
+  		import IR.RangeRep
+  		IR.Range(dsl"0", dsl"$arr.length").foreach(__lambda({ (j: Rep[Int]) => 
+			val e = dsl"$arr($j)"
+  			dsl"$newArr($j) = ${copyRecord(e)}"
+  		}))
+		newArr.asInstanceOf[Rep[Any]]
   }
 
   rewrite += symRule {

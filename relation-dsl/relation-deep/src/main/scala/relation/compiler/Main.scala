@@ -3,16 +3,18 @@ package compiler
 
 import shallow._
 import deep._
+// import ch.epfl.data.sc.pardis.deep.scalalib.ArrayPartialEvaluation
 
 object Main extends App {
   
-  implicit object Context extends RelationDSLOpsPackaged
+  implicit object Context extends RelationDSLOpsPackaged //with ArrayPartialEvaluation
   
   def pgrmA = dsl""" 
     val schema = Schema("number", "digit")
     val R = Relation.scan("data/R.csv", schema, "|")
     val selR = R.select(x => x.getField("number") == "one")
-    selR.print
+    val projR = selR.project(Schema("number"))
+    projR.print
   """
   
   def pgrm = pgrmA
