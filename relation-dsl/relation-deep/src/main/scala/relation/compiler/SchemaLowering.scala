@@ -73,7 +73,7 @@ class SchemaLowering(override val IR: RelationDSLOpsPackaged) extends RecursiveR
   }
 
   rewrite += symRule {
-    case dsl"(${ArrFromRelation(arr)}: Relation).select((x: Row) => x.getField($name) == ($value: String))" => {
+    case dsl"(${ArrFromRelation(arr)}: Relation).select((x: Row) => x.getField($_, $name) == ($value: String))" => {
       implicit val recTp: TypeRep[Rec] = arr.tp.typeArguments(0).asInstanceOf[TypeRep[Rec]]
       dsl"""
         var size = 0

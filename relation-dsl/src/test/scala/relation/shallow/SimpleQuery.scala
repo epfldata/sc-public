@@ -11,18 +11,20 @@ class SimpleQuery extends FlatSpec {
 
   "Scanning R" should "work" in {
     RScan.toString should be {
-"""one, 1
+"""number, digit
+one, 1
 two, 2
 three, 3
 """
     }
   }
 
-  val RSelect = RScan.select(r => r.getField("digit").toInt % 2 == 1)
+  val RSelect = RScan.select(r => r.getField(RSchema, "digit").toInt % 2 == 1)
 
   "Selecting R" should "work" in {
     RSelect.toString should be {
-"""one, 1
+"""number, digit
+one, 1
 three, 3
 """
     }
@@ -33,10 +35,25 @@ three, 3
 
   "Projecting R" should "work" in {
     RProject.toString should be {
-"""one
+"""number
+one
 two
 three
 """
     }
+  }
+
+  val SSchema = new Schema(List("digit", "nombre"))
+  val SFile = "data/S.csv"
+  val SScan = Relation.scan(SFile, SSchema, "|")
+
+  "Joining R and S" should "work" in {
+  	RScan.join(SScan, "digit", "digit").toString should be {
+"""number, digit, nombre
+one, 1, un
+two, 2, deux
+three, 3, trois
+"""
+  	}
   }
 }

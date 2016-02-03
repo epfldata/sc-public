@@ -116,15 +116,14 @@ trait RowOps extends Base with ListOps with SchemaOps {
   val RowType = RowIRs.RowType
   implicit val typeRow: TypeRep[Row] = RowType
   implicit class RowRep(self : Rep[Row]) {
-     def getField(fieldName : Rep[String]) : Rep[String] = rowGetField(self, fieldName)
+     def getField(schema : Rep[Schema], fieldName : Rep[String]) : Rep[String] = rowGetField(self, schema, fieldName)
      def values : Rep[List[String]] = row_Field_Values(self)
-     def schema : Rep[Schema] = row_Field_Schema(self)
   }
   object Row {
 
   }
   // constructors
-   def __newRow(schema : Rep[Schema], values : Rep[List[String]]) : Rep[Row] = rowNew(schema, values)
+   def __newRow(values : Rep[List[String]]) : Rep[Row] = rowNew(values)
   // IR defs
   val RowNew = RowIRs.RowNew
   type RowNew = RowIRs.RowNew
@@ -132,13 +131,10 @@ trait RowOps extends Base with ListOps with SchemaOps {
   type RowGetField = RowIRs.RowGetField
   val Row_Field_Values = RowIRs.Row_Field_Values
   type Row_Field_Values = RowIRs.Row_Field_Values
-  val Row_Field_Schema = RowIRs.Row_Field_Schema
-  type Row_Field_Schema = RowIRs.Row_Field_Schema
   // method definitions
-   def rowNew(schema : Rep[Schema], values : Rep[List[String]]) : Rep[Row] = RowNew(schema, values)
-   def rowGetField(self : Rep[Row], fieldName : Rep[String]) : Rep[String] = RowGetField(self, fieldName)
+   def rowNew(values : Rep[List[String]]) : Rep[Row] = RowNew(values)
+   def rowGetField(self : Rep[Row], schema : Rep[Schema], fieldName : Rep[String]) : Rep[String] = RowGetField(self, schema, fieldName)
    def row_Field_Values(self : Rep[Row]) : Rep[List[String]] = Row_Field_Values(self)
-   def row_Field_Schema(self : Rep[Row]) : Rep[Schema] = Row_Field_Schema(self)
   type Row = relation.shallow.Row
 }
 object RowIRs extends Base {
@@ -152,11 +148,11 @@ object RowIRs extends Base {
   }
       implicit val typeRow: TypeRep[Row] = RowType
   // case classes
-  case class RowNew(schema : Rep[Schema], values : Rep[List[String]]) extends ConstructorDef[Row](List(), "Row", List(List(schema,values))){
-    override def curriedConstructor = (copy _).curried
+  case class RowNew(values : Rep[List[String]]) extends ConstructorDef[Row](List(), "Row", List(List(values))){
+    override def curriedConstructor = (copy _)
   }
 
-  case class RowGetField(self : Rep[Row], fieldName : Rep[String]) extends FunctionDef[String](Some(self), "getField", List(List(fieldName))){
+  case class RowGetField(self : Rep[Row], schema : Rep[Schema], fieldName : Rep[String]) extends FunctionDef[String](Some(self), "getField", List(List(schema,fieldName))){
     override def curriedConstructor = (copy _).curried
   }
 
@@ -167,18 +163,6 @@ object RowIRs extends Base {
     override def partiallyEvaluate(children: Any*): List[String] = {
       val self = children(0).asInstanceOf[Row]
       self.values
-    }
-    override def partiallyEvaluable: Boolean = true
-
-  }
-
-  case class Row_Field_Schema(self : Rep[Row]) extends FieldDef[Schema](self, "schema"){
-    override def curriedConstructor = (copy _)
-    override def isPure = true
-
-    override def partiallyEvaluate(children: Any*): Schema = {
-      val self = children(0).asInstanceOf[Row]
-      self.schema
     }
     override def partiallyEvaluable: Boolean = true
 
@@ -197,10 +181,6 @@ trait RowPartialEvaluation extends RowComponent with BasePartialEvaluation {
     case Def(node: RowNew) => node.values
     case _ => super.row_Field_Values(self)
   }
-  override def row_Field_Schema(self : Rep[Row]) : Rep[Schema] = self match {
-    case Def(node: RowNew) => node.schema
-    case _ => super.row_Field_Schema(self)
-  }
 
   // Mutable field inlining 
   // Pure function partial evaluation
@@ -214,20 +194,16 @@ object RowQuasiNodes extends BaseExtIR {
   import ListQuasiNodes._
   import SchemaQuasiNodes._
   // case classes
-  case class RowNewExt(schema : Rep[Schema], values : Rep[List[String]]) extends FunctionDef[RowNew, Row] {
+  case class RowNewExt(values : Rep[List[String]]) extends FunctionDef[RowNew, Row] {
     override def nodeUnapply(t: RowNew): Option[Product] = (RowNew.unapply(t): Option[Product]) map { r =>
       r }
   }
-  case class RowGetFieldExt(self : Rep[Row], fieldName : Rep[String]) extends FunctionDef[RowGetField, String] {
+  case class RowGetFieldExt(self : Rep[Row], schema : Rep[Schema], fieldName : Rep[String]) extends FunctionDef[RowGetField, String] {
     override def nodeUnapply(t: RowGetField): Option[Product] = (RowGetField.unapply(t): Option[Product]) map { r =>
       r }
   }
   case class Row_Field_ValuesExt(self : Rep[Row]) extends FunctionDef[Row_Field_Values, List[String]] {
     override def nodeUnapply(t: Row_Field_Values): Option[Product] = (Row_Field_Values.unapply(t): Option[Product]) map { r =>
-      r }
-  }
-  case class Row_Field_SchemaExt(self : Rep[Row]) extends FunctionDef[Row_Field_Schema, Schema] {
-    override def nodeUnapply(t: Row_Field_Schema): Option[Product] = (Row_Field_Schema.unapply(t): Option[Product]) map { r =>
       r }
   }
   type Row = relation.shallow.Row
@@ -240,20 +216,18 @@ trait RowExtOps extends BaseExt with ListExtOps with SchemaExtOps {
   import ListQuasiNodes._
   import SchemaQuasiNodes._
   implicit class RowRep(self : Rep[Row]) {
-     def getField(fieldName : Rep[String]) : Rep[String] = rowGetField(self, fieldName)
+     def getField(schema : Rep[Schema], fieldName : Rep[String]) : Rep[String] = rowGetField(self, schema, fieldName)
      def values : Rep[List[String]] = row_Field_Values(self)
-     def schema : Rep[Schema] = row_Field_Schema(self)
   }
   object Row {
   }
   // constructors
-   def __newRow(schema : Rep[Schema], values : Rep[List[String]]) : Rep[Row] = rowNew(schema, values)
+   def __newRow(values : Rep[List[String]]) : Rep[Row] = rowNew(values)
   
   // method definitions
-   def rowNew(schema : Rep[Schema], values : Rep[List[String]]) : Rep[Row] = RowNewExt(schema, values)
-   def rowGetField(self : Rep[Row], fieldName : Rep[String]) : Rep[String] = RowGetFieldExt(self, fieldName)
+   def rowNew(values : Rep[List[String]]) : Rep[Row] = RowNewExt(values)
+   def rowGetField(self : Rep[Row], schema : Rep[Schema], fieldName : Rep[String]) : Rep[String] = RowGetFieldExt(self, schema, fieldName)
    def row_Field_Values(self : Rep[Row]) : Rep[List[String]] = Row_Field_ValuesExt(self)
-   def row_Field_Schema(self : Rep[Row]) : Rep[Schema] = Row_Field_SchemaExt(self)
   type Row = relation.shallow.Row
 }
 
@@ -385,17 +359,18 @@ trait RelationOps extends Base with RowOps with SchemaOps with ListOps {
   implicit val typeRelation: TypeRep[Relation] = RelationType
   implicit class RelationRep(self : Rep[Relation]) {
      def select(p : Rep[(Row => Boolean)]) : Rep[Relation] = relationSelect(self, p)
-     def project(schema : Rep[Schema]) : Rep[Relation] = relationProject(self, schema)
+     def project(newSchema : Rep[Schema]) : Rep[Relation] = relationProject(self, newSchema)
      def join(o : Rep[Relation], cond : Rep[((Row,Row) => Boolean)]) : Rep[Relation] = relationJoin(self, o, cond)
      def aggregate(key : Rep[Schema], agg : Rep[((Double,Row) => Double)]) : Rep[Relation] = relationAggregate(self, key, agg)
      def print : Rep[Unit] = relationPrint(self)
      def underlying : Rep[List[Row]] = relation_Field_Underlying(self)
+     def schema : Rep[Schema] = relation_Field_Schema(self)
   }
   object Relation {
      def scan(filename : Rep[String], schema : Rep[Schema], delimiter : Rep[String]) : Rep[Relation] = relationScanObject(filename, schema, delimiter)
   }
   // constructors
-   def __newRelation(underlying : Rep[List[Row]]) : Rep[Relation] = relationNew(underlying)
+   def __newRelation(schema : Rep[Schema], underlying : Rep[List[Row]]) : Rep[Relation] = relationNew(schema, underlying)
   // IR defs
   val RelationNew = RelationIRs.RelationNew
   type RelationNew = RelationIRs.RelationNew
@@ -411,16 +386,19 @@ trait RelationOps extends Base with RowOps with SchemaOps with ListOps {
   type RelationPrint = RelationIRs.RelationPrint
   val Relation_Field_Underlying = RelationIRs.Relation_Field_Underlying
   type Relation_Field_Underlying = RelationIRs.Relation_Field_Underlying
+  val Relation_Field_Schema = RelationIRs.Relation_Field_Schema
+  type Relation_Field_Schema = RelationIRs.Relation_Field_Schema
   val RelationScanObject = RelationIRs.RelationScanObject
   type RelationScanObject = RelationIRs.RelationScanObject
   // method definitions
-   def relationNew(underlying : Rep[List[Row]]) : Rep[Relation] = RelationNew(underlying)
+   def relationNew(schema : Rep[Schema], underlying : Rep[List[Row]]) : Rep[Relation] = RelationNew(schema, underlying)
    def relationSelect(self : Rep[Relation], p : Rep[((Row) => Boolean)]) : Rep[Relation] = RelationSelect(self, p)
-   def relationProject(self : Rep[Relation], schema : Rep[Schema]) : Rep[Relation] = RelationProject(self, schema)
+   def relationProject(self : Rep[Relation], newSchema : Rep[Schema]) : Rep[Relation] = RelationProject(self, newSchema)
    def relationJoin(self : Rep[Relation], o : Rep[Relation], cond : Rep[((Row,Row) => Boolean)]) : Rep[Relation] = RelationJoin(self, o, cond)
    def relationAggregate(self : Rep[Relation], key : Rep[Schema], agg : Rep[((Double,Row) => Double)]) : Rep[Relation] = RelationAggregate(self, key, agg)
    def relationPrint(self : Rep[Relation]) : Rep[Unit] = RelationPrint(self)
    def relation_Field_Underlying(self : Rep[Relation]) : Rep[List[Row]] = Relation_Field_Underlying(self)
+   def relation_Field_Schema(self : Rep[Relation]) : Rep[Schema] = Relation_Field_Schema(self)
    def relationScanObject(filename : Rep[String], schema : Rep[Schema], delimiter : Rep[String]) : Rep[Relation] = RelationScanObject(filename, schema, delimiter)
   type Relation = relation.shallow.Relation
 }
@@ -436,15 +414,15 @@ object RelationIRs extends Base {
   }
       implicit val typeRelation: TypeRep[Relation] = RelationType
   // case classes
-  case class RelationNew(underlying : Rep[List[Row]]) extends ConstructorDef[Relation](List(), "Relation", List(List(underlying))){
-    override def curriedConstructor = (copy _)
+  case class RelationNew(schema : Rep[Schema], underlying : Rep[List[Row]]) extends ConstructorDef[Relation](List(), "Relation", List(List(schema,underlying))){
+    override def curriedConstructor = (copy _).curried
   }
 
   case class RelationSelect(self : Rep[Relation], p : Rep[((Row) => Boolean)]) extends FunctionDef[Relation](Some(self), "select", List(List(p))){
     override def curriedConstructor = (copy _).curried
   }
 
-  case class RelationProject(self : Rep[Relation], schema : Rep[Schema]) extends FunctionDef[Relation](Some(self), "project", List(List(schema))){
+  case class RelationProject(self : Rep[Relation], newSchema : Rep[Schema]) extends FunctionDef[Relation](Some(self), "project", List(List(newSchema))){
     override def curriedConstructor = (copy _).curried
   }
 
@@ -472,6 +450,18 @@ object RelationIRs extends Base {
 
   }
 
+  case class Relation_Field_Schema(self : Rep[Relation]) extends FieldDef[Schema](self, "schema"){
+    override def curriedConstructor = (copy _)
+    override def isPure = true
+
+    override def partiallyEvaluate(children: Any*): Schema = {
+      val self = children(0).asInstanceOf[Relation]
+      self.schema
+    }
+    override def partiallyEvaluable: Boolean = true
+
+  }
+
   case class RelationScanObject(filename : Rep[String], schema : Rep[Schema], delimiter : Rep[String]) extends FunctionDef[Relation](None, "Relation.scan", List(List(filename,schema,delimiter))){
     override def curriedConstructor = (copy _).curried
   }
@@ -489,6 +479,10 @@ trait RelationPartialEvaluation extends RelationComponent with BasePartialEvalua
     case Def(node: RelationNew) => node.underlying
     case _ => super.relation_Field_Underlying(self)
   }
+  override def relation_Field_Schema(self : Rep[Relation]) : Rep[Schema] = self match {
+    case Def(node: RelationNew) => node.schema
+    case _ => super.relation_Field_Schema(self)
+  }
 
   // Mutable field inlining 
   // Pure function partial evaluation
@@ -503,7 +497,7 @@ object RelationQuasiNodes extends BaseExtIR {
   import SchemaQuasiNodes._
   import ListQuasiNodes._
   // case classes
-  case class RelationNewExt(underlying : Rep[List[Row]]) extends FunctionDef[RelationNew, Relation] {
+  case class RelationNewExt(schema : Rep[Schema], underlying : Rep[List[Row]]) extends FunctionDef[RelationNew, Relation] {
     override def nodeUnapply(t: RelationNew): Option[Product] = (RelationNew.unapply(t): Option[Product]) map { r =>
       r }
   }
@@ -511,7 +505,7 @@ object RelationQuasiNodes extends BaseExtIR {
     override def nodeUnapply(t: RelationSelect): Option[Product] = (RelationSelect.unapply(t): Option[Product]) map { r =>
       r }
   }
-  case class RelationProjectExt(self : Rep[Relation], schema : Rep[Schema]) extends FunctionDef[RelationProject, Relation] {
+  case class RelationProjectExt(self : Rep[Relation], newSchema : Rep[Schema]) extends FunctionDef[RelationProject, Relation] {
     override def nodeUnapply(t: RelationProject): Option[Product] = (RelationProject.unapply(t): Option[Product]) map { r =>
       r }
   }
@@ -531,6 +525,10 @@ object RelationQuasiNodes extends BaseExtIR {
     override def nodeUnapply(t: Relation_Field_Underlying): Option[Product] = (Relation_Field_Underlying.unapply(t): Option[Product]) map { r =>
       r }
   }
+  case class Relation_Field_SchemaExt(self : Rep[Relation]) extends FunctionDef[Relation_Field_Schema, Schema] {
+    override def nodeUnapply(t: Relation_Field_Schema): Option[Product] = (Relation_Field_Schema.unapply(t): Option[Product]) map { r =>
+      r }
+  }
   case class RelationScanObjectExt(filename : Rep[String], schema : Rep[Schema], delimiter : Rep[String]) extends FunctionDef[RelationScanObject, Relation] {
     override def nodeUnapply(t: RelationScanObject): Option[Product] = (RelationScanObject.unapply(t): Option[Product]) map { r =>
       r }
@@ -547,26 +545,28 @@ trait RelationExtOps extends BaseExt with RowExtOps with SchemaExtOps with ListE
   import ListQuasiNodes._
   implicit class RelationRep(self : Rep[Relation]) {
      def select(p : Rep[(Row => Boolean)]) : Rep[Relation] = relationSelect(self, p)
-     def project(schema : Rep[Schema]) : Rep[Relation] = relationProject(self, schema)
+     def project(newSchema : Rep[Schema]) : Rep[Relation] = relationProject(self, newSchema)
      def join(o : Rep[Relation], cond : Rep[((Row,Row) => Boolean)]) : Rep[Relation] = relationJoin(self, o, cond)
      def aggregate(key : Rep[Schema], agg : Rep[((Double,Row) => Double)]) : Rep[Relation] = relationAggregate(self, key, agg)
      def print : Rep[Unit] = relationPrint(self)
      def underlying : Rep[List[Row]] = relation_Field_Underlying(self)
+     def schema : Rep[Schema] = relation_Field_Schema(self)
   }
   object Relation {
      def scan(filename : Rep[String], schema : Rep[Schema], delimiter : Rep[String]) : Rep[Relation] = relationScanObject(filename, schema, delimiter)
   }
   // constructors
-   def __newRelation(underlying : Rep[List[Row]]) : Rep[Relation] = relationNew(underlying)
+   def __newRelation(schema : Rep[Schema], underlying : Rep[List[Row]]) : Rep[Relation] = relationNew(schema, underlying)
   
   // method definitions
-   def relationNew(underlying : Rep[List[Row]]) : Rep[Relation] = RelationNewExt(underlying)
+   def relationNew(schema : Rep[Schema], underlying : Rep[List[Row]]) : Rep[Relation] = RelationNewExt(schema, underlying)
    def relationSelect(self : Rep[Relation], p : Rep[((Row) => Boolean)]) : Rep[Relation] = RelationSelectExt(self, p)
-   def relationProject(self : Rep[Relation], schema : Rep[Schema]) : Rep[Relation] = RelationProjectExt(self, schema)
+   def relationProject(self : Rep[Relation], newSchema : Rep[Schema]) : Rep[Relation] = RelationProjectExt(self, newSchema)
    def relationJoin(self : Rep[Relation], o : Rep[Relation], cond : Rep[((Row,Row) => Boolean)]) : Rep[Relation] = RelationJoinExt(self, o, cond)
    def relationAggregate(self : Rep[Relation], key : Rep[Schema], agg : Rep[((Double,Row) => Double)]) : Rep[Relation] = RelationAggregateExt(self, key, agg)
    def relationPrint(self : Rep[Relation]) : Rep[Unit] = RelationPrintExt(self)
    def relation_Field_Underlying(self : Rep[Relation]) : Rep[List[Row]] = Relation_Field_UnderlyingExt(self)
+   def relation_Field_Schema(self : Rep[Relation]) : Rep[Schema] = Relation_Field_SchemaExt(self)
    def relationScanObject(filename : Rep[String], schema : Rep[Schema], delimiter : Rep[String]) : Rep[Relation] = RelationScanObjectExt(filename, schema, delimiter)
   type Relation = relation.shallow.Relation
 }
