@@ -28,6 +28,8 @@ class SchemaLowering(override val IR: RelationDSLOpsPackaged) extends RecursiveR
     }
   }
 
+  val symbolSchema = scala.collection.mutable.Map[Rep[_], Schema]()
+
   private var recordsCount = 0
 
   def getClassTag = {
@@ -38,8 +40,9 @@ class SchemaLowering(override val IR: RelationDSLOpsPackaged) extends RecursiveR
   class Rec
 
   rewrite += symRule {
-    case dsl"Relation.scan(${Constant(fileName)}, $schema, ${Constant(delimiter)})" => 
+    case rel @ dsl"Relation.scan(${Constant(fileName)}, $schema, ${Constant(delimiter)})" => 
       val constantSchema = convertToStaticSchema(schema)
+      symbolSchema += rel -> constantSchema
       val scanner = dsl"new RelationScanner($fileName, ${delimiter.charAt(0)})"
 
       implicit val recTp: TypeRep[Rec] = new RecordType[Rec](getClassTag, None)
@@ -58,9 +61,9 @@ class SchemaLowering(override val IR: RelationDSLOpsPackaged) extends RecursiveR
   }
 
   rewrite += symRule {
-    case dsl"(${ArrFromRelation(arr)}: Relation).project($schema)" => 
+    case rel @ dsl"(${ArrFromRelation(arr)}: Relation).project($schema)" => 
       val constantSchema = convertToStaticSchema(schema)
-
+      symbolSchema += rel -> constantSchema
       implicit val recTp: TypeRep[Rec] = new RecordType[Rec](getClassTag, None)
       def copyRecord(e: Rep[Any]): Rep[Rec] = __new[Rec](constantSchema.columns.map(column => (column, false, field[String](e, column))): _*)
       val newArr = dsl"new Array[Rec]($arr.length)"
@@ -73,7 +76,8 @@ class SchemaLowering(override val IR: RelationDSLOpsPackaged) extends RecursiveR
   }
 
   rewrite += symRule {
-    case dsl"(${ArrFromRelation(arr)}: Relation).select((x: Row) => x.getField($_, $name) == ($value: String))" => {
+    case rel @ dsl"(${rel1 @ ArrFromRelation(arr)}: Relation).select((x: Row) => x.getField($_, $name) == ($value: String))" => {
+      symbolSchema += rel -> symbolSchema(rel1)
       implicit val recTp: TypeRep[Rec] = arr.tp.typeArguments(0).asInstanceOf[TypeRep[Rec]]
       dsl"""
         var size = 0
@@ -95,6 +99,46 @@ class SchemaLowering(override val IR: RelationDSLOpsPackaged) extends RecursiveR
         arr
       """
       // dsl"println($value)"
+    }
+  }
+
+  rewrite += symRule {
+    case relr @ dsl"(${rel1 @ ArrFromRelation(arr1)}: Relation).join(${rel2 @ ArrFromRelation(arr2)}, $key1, $key2)" => {
+      implicit val recTp: TypeRep[Rec] = new RecordType[Rec](getClassTag, None)
+      val sch1 = symbolSchema(rel1)
+      val sch2 = symbolSchema(rel2)
+      val (Constant(leftKey), Constant(rightKey)) = key1 -> key2
+      val sch1List = sch1.columns
+      val sch2List = sch2.columns.filter(_ != rightKey)
+      val newSchema = new Schema(sch1List ++ sch2List)
+      symbolSchema += relr -> newSchema
+      def joinRecords(e1: Rep[Any], e2: Rep[Any]): Rep[Rec] = 
+        __new[Rec](sch1List.map(column => (column, false, field[String](e1, column))) ++ 
+          sch2List.map(column => (column, false, field[String](e2, column))): _*)
+      def iterateOverTwoLists[T](f: (Rep[Any], Rep[Any]) => Rep[Unit]): Rep[Unit] = {
+        import IR.RangeRep
+        IR.Range(dsl"0", dsl"$arr1.length").foreach(__lambda({ (i: Rep[Int]) => 
+          val e1 = dsl"$arr1($i)"
+          IR.Range(dsl"0", dsl"$arr2.length").foreach(__lambda({ (j: Rep[Int]) => 
+            val e2 = dsl"$arr2($j)"
+            f(e1, e2)
+            }))
+        }))
+      }
+      val size = newVar(dsl"0")
+      iterateOverTwoLists((x, y) => 
+        dsl"if(__struct_field[String]($x, $key1) == __struct_field[String]($y, $key2)) $size = $size + 1"
+      )
+      val arr = dsl"new Array[Rec]($size)"
+      val index = newVar(dsl"0")
+      iterateOverTwoLists((x, y) => 
+        dsl"""
+        if(__struct_field[String]($x, $key1) == __struct_field[String]($y, $key2)) {
+          $arr($index) = ${joinRecords(x, y)}
+          $index = $index + 1
+        }"""
+      )
+      arr
     }
   }
 

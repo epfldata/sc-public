@@ -16,8 +16,17 @@ object Main extends App {
     val projR = selR.project(Schema("number"))
     projR.print
   """
+
+  def pgrmB = dsl""" 
+    val Rschema = Schema("number", "digit")
+    val R = Relation.scan("data/R.csv", Rschema, "|")
+    val Sschema = Schema("digit", "nombre")
+    val S = Relation.scan("data/S.csv", Sschema, "|")
+    val RS = R.join(S, "digit", "digit")
+    RS.print
+  """
   
-  def pgrm = pgrmA
+  def pgrm = pgrmB
   
   {
     import Context.Predef._  // needed to provide the `compile` methods with an implicit TypeRep

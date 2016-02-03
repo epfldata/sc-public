@@ -360,7 +360,7 @@ trait RelationOps extends Base with RowOps with SchemaOps with ListOps {
   implicit class RelationRep(self : Rep[Relation]) {
      def select(p : Rep[(Row => Boolean)]) : Rep[Relation] = relationSelect(self, p)
      def project(newSchema : Rep[Schema]) : Rep[Relation] = relationProject(self, newSchema)
-     def join(o : Rep[Relation], cond : Rep[((Row,Row) => Boolean)]) : Rep[Relation] = relationJoin(self, o, cond)
+     def join(o : Rep[Relation], leftKey : Rep[String], rightKey : Rep[String]) : Rep[Relation] = relationJoin(self, o, leftKey, rightKey)
      def aggregate(key : Rep[Schema], agg : Rep[((Double,Row) => Double)]) : Rep[Relation] = relationAggregate(self, key, agg)
      def print : Rep[Unit] = relationPrint(self)
      def underlying : Rep[List[Row]] = relation_Field_Underlying(self)
@@ -394,7 +394,7 @@ trait RelationOps extends Base with RowOps with SchemaOps with ListOps {
    def relationNew(schema : Rep[Schema], underlying : Rep[List[Row]]) : Rep[Relation] = RelationNew(schema, underlying)
    def relationSelect(self : Rep[Relation], p : Rep[((Row) => Boolean)]) : Rep[Relation] = RelationSelect(self, p)
    def relationProject(self : Rep[Relation], newSchema : Rep[Schema]) : Rep[Relation] = RelationProject(self, newSchema)
-   def relationJoin(self : Rep[Relation], o : Rep[Relation], cond : Rep[((Row,Row) => Boolean)]) : Rep[Relation] = RelationJoin(self, o, cond)
+   def relationJoin(self : Rep[Relation], o : Rep[Relation], leftKey : Rep[String], rightKey : Rep[String]) : Rep[Relation] = RelationJoin(self, o, leftKey, rightKey)
    def relationAggregate(self : Rep[Relation], key : Rep[Schema], agg : Rep[((Double,Row) => Double)]) : Rep[Relation] = RelationAggregate(self, key, agg)
    def relationPrint(self : Rep[Relation]) : Rep[Unit] = RelationPrint(self)
    def relation_Field_Underlying(self : Rep[Relation]) : Rep[List[Row]] = Relation_Field_Underlying(self)
@@ -426,7 +426,7 @@ object RelationIRs extends Base {
     override def curriedConstructor = (copy _).curried
   }
 
-  case class RelationJoin(self : Rep[Relation], o : Rep[Relation], cond : Rep[((Row,Row) => Boolean)]) extends FunctionDef[Relation](Some(self), "join", List(List(o,cond))){
+  case class RelationJoin(self : Rep[Relation], o : Rep[Relation], leftKey : Rep[String], rightKey : Rep[String]) extends FunctionDef[Relation](Some(self), "join", List(List(o,leftKey,rightKey))){
     override def curriedConstructor = (copy _).curried
   }
 
@@ -509,7 +509,7 @@ object RelationQuasiNodes extends BaseExtIR {
     override def nodeUnapply(t: RelationProject): Option[Product] = (RelationProject.unapply(t): Option[Product]) map { r =>
       r }
   }
-  case class RelationJoinExt(self : Rep[Relation], o : Rep[Relation], cond : Rep[((Row,Row) => Boolean)]) extends FunctionDef[RelationJoin, Relation] {
+  case class RelationJoinExt(self : Rep[Relation], o : Rep[Relation], leftKey : Rep[String], rightKey : Rep[String]) extends FunctionDef[RelationJoin, Relation] {
     override def nodeUnapply(t: RelationJoin): Option[Product] = (RelationJoin.unapply(t): Option[Product]) map { r =>
       r }
   }
@@ -546,7 +546,7 @@ trait RelationExtOps extends BaseExt with RowExtOps with SchemaExtOps with ListE
   implicit class RelationRep(self : Rep[Relation]) {
      def select(p : Rep[(Row => Boolean)]) : Rep[Relation] = relationSelect(self, p)
      def project(newSchema : Rep[Schema]) : Rep[Relation] = relationProject(self, newSchema)
-     def join(o : Rep[Relation], cond : Rep[((Row,Row) => Boolean)]) : Rep[Relation] = relationJoin(self, o, cond)
+     def join(o : Rep[Relation], leftKey : Rep[String], rightKey : Rep[String]) : Rep[Relation] = relationJoin(self, o, leftKey, rightKey)
      def aggregate(key : Rep[Schema], agg : Rep[((Double,Row) => Double)]) : Rep[Relation] = relationAggregate(self, key, agg)
      def print : Rep[Unit] = relationPrint(self)
      def underlying : Rep[List[Row]] = relation_Field_Underlying(self)
@@ -562,7 +562,7 @@ trait RelationExtOps extends BaseExt with RowExtOps with SchemaExtOps with ListE
    def relationNew(schema : Rep[Schema], underlying : Rep[List[Row]]) : Rep[Relation] = RelationNewExt(schema, underlying)
    def relationSelect(self : Rep[Relation], p : Rep[((Row) => Boolean)]) : Rep[Relation] = RelationSelectExt(self, p)
    def relationProject(self : Rep[Relation], newSchema : Rep[Schema]) : Rep[Relation] = RelationProjectExt(self, newSchema)
-   def relationJoin(self : Rep[Relation], o : Rep[Relation], cond : Rep[((Row,Row) => Boolean)]) : Rep[Relation] = RelationJoinExt(self, o, cond)
+   def relationJoin(self : Rep[Relation], o : Rep[Relation], leftKey : Rep[String], rightKey : Rep[String]) : Rep[Relation] = RelationJoinExt(self, o, leftKey, rightKey)
    def relationAggregate(self : Rep[Relation], key : Rep[Schema], agg : Rep[((Double,Row) => Double)]) : Rep[Relation] = RelationAggregateExt(self, key, agg)
    def relationPrint(self : Rep[Relation]) : Rep[Unit] = RelationPrintExt(self)
    def relation_Field_Underlying(self : Rep[Relation]) : Rep[List[Row]] = Relation_Field_UnderlyingExt(self)
