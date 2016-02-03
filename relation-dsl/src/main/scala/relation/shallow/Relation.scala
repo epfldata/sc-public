@@ -43,7 +43,13 @@ class Relation(val schema: Schema, val underlying: List[Row]) {
       })
     )
   }
-  def join(o: Relation, cond: (Row, Row) => Boolean): Relation = ???
+  def join(o: Relation, leftKey: String, rightKey: String): Relation = {
+    val newSchema = new Schema(schema.columns ++ o.schema.columns.filter(_ != rightKey))
+    val joinedRows = for(r1 <- underlying; 
+        r2 <- o.underlying if r1.getField(schema, leftKey) == r2.getField(o.schema, rightKey)) yield
+      new Row(r1.values ++ r2.values.zip(o.schema.columns).filter(_._2 != rightKey).map(_._1))
+    new Relation(newSchema, joinedRows)
+  }
   def aggregate(key: Schema, agg: (Double, Row) => Double): Relation = ???
   def print: Unit = for(r <- underlying) {
     println(r)

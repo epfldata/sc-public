@@ -42,4 +42,18 @@ three
 """
     }
   }
+
+  val SSchema = new Schema(List("digit", "nombre"))
+  val SFile = "data/S.csv"
+  val SScan = Relation.scan(SFile, SSchema, "|")
+
+  "Joining R and S" should "work" in {
+  	RScan.join(SScan, "digit", "digit").toString should be {
+"""number, digit, nombre
+one, 1, un
+two, 2, deux
+three, 3, trois
+"""
+  	}
+  }
 }
