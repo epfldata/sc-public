@@ -8,6 +8,7 @@ To do so, have a look at the [development process](https://github.com/epfldata/s
 
 We concretely demonstrate this development process through two toy examples:
  * the [List](https://github.com/epfldata/sc-examples/blob/master/list-dsl) tutorial: using quasiquotes to define lowerings and offline optimization on a basic `List` class, and converting it to simple C-like memory management
+ * the [Relation](relation-dsl) tutorial: using quasiquotes to define transformations for compiling relational algebra and specializing Schema information
  * the [Vector](https://github.com/epfldata/sc-examples/blob/master/vector-dsl) tutorial: defining a DSL for working with Vectors
  
 Some additional docs are provided in the [`doc`](https://github.com/epfldata/sc-examples/blob/master/doc) folder.
