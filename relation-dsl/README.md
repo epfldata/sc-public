@@ -240,7 +240,7 @@ object StaticSchema {
 It takes as input a `Rep[Schema]` and returns a `Schema` (notice: not a `Rep[Schema]`) if successful; otherwise `None.`
 For it to the extractor to be successful, every part of the schema has to be a constant.
 
-Having static `Schema`s is useful because we can now associate them with tailored record types that more efficiently store and access the fields.
+Having static `Schema`s is useful because we can now associate them with tailored record types that more efficiently store and access row data.
 Creating a record type is done through the `__new[Rec](fields)` function, and can be used with a special syntax inside of quasiquotes.
 In the same transformation, we also _lower_ the representation of relations to simple arrays (see the [list tutorial](../list-dsl) for more info on lowerings).
 
@@ -250,7 +250,7 @@ For implementing joins, we will also need to keep a static (compile-time) mappin
 val symbolSchema = mutable.Map[Rep[_], Schema]()
 ```
 
-Here is the code of the specialized impleemntation of `project`, implemented as a transformation:
+Here is the code for the specialized implementation of `project`, implemented as a transformation:
 
 ```scala
 rewrite += symRule {
