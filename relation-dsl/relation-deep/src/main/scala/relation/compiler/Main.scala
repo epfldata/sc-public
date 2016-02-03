@@ -12,7 +12,7 @@ object Main extends App {
   def pgrmA = dsl""" 
     val schema = Schema("number", "digit")
     val R = Relation.scan("data/R.csv", schema, "|")
-    val selR = R.select(x => x.getField("number") == "one")
+    val selR = R.select(x => x.getField(schema, "number") == "one")
     val projR = selR.project(Schema("number"))
     projR.print
   """
