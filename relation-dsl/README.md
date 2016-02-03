@@ -69,7 +69,7 @@ In the case of `Relation`, we have:
 ```scala
 @deep
 @needs[Row :: Schema :: List[_]]
-class Relation(val underlying: List[Row]) {
+class Relation(val schema: Schema, val underlying: List[Row]) {
   ...
 ```
 
@@ -77,19 +77,14 @@ Here, the `@deep` annotation tells Purgatory that we would like deep embedding o
 In case you do not want to generate the _Ext_ or _Exp_ part, add the `@noDeepExt`/`@noDeepExp` annotation.
 
 `@needs` specifies which DSL features our DSL requires. Since our library uses 2-element tuples and they are not present in the default `Base` DSL embedded with SC, we need to add this requirement. If we omitted it, the generated code would not be able to compile.  
-Note that `(_,_)` is just syntax sugar for `Tuple2[_,_]`, and that a special `::` type, defined in `pardis.annotations`, is used to separate the types passed to `@needs`.
-
-
-**Remark**: From a theoretical point of view, `map` is only conditionally pure, i.e., it is only pure if the function argument `f` it is passed is also pure.
-If one knows, however, that no impure functions may be passed to `map` in the context of one's DSL, one may still mark it `@pure`. A more elaborate effect system will be introduced in a future version of SC (cf. [sc/issues/144](https://github.com/epfldata/sc/issues/144)).
-
+Note that a special `::` type, defined in `pardis.annotations`, is used to separate the types passed to `@needs`.
 
 ### Recommended SBT Configuration
 
 In order to use Purgatory, we need to add it to the `plugins.sbt` file:
 ```scala
 resolvers += Resolver.sonatypeRepo("snapshots")
-addSbtPlugin("ch.epfl.data" % "sc-purgatory-plugin" % "0.1")
+addSbtPlugin("ch.epfl.data" % "sc-purgatory-plugin" % "0.1.1-SNAPSHOT")
 ```
 
 We recommend that one create an SBT sub-project for the deep embedding of the library.
@@ -100,7 +95,7 @@ The important generation settings needed in the SBT configuration are the follow
 ```scala
 generatorSettings ++ Seq(
     generatePlugins += "ch.epfl.data.sc.purgatory.generator.QuasiGenerator",
-    pluginLibraries += "ch.epfl.data" % "sc-purgatory-quasi_2.11" % "0.1-SNAPSHOT",
+    pluginLibraries += "ch.epfl.data" % "sc-purgatory-quasi_2.11" % "0.1.1-SNAPSHOT",
 
     outputFolder := "relation-deep/src/main/scala/relation/deep",
     inputPackage := "relation.shallow",
