@@ -17,7 +17,7 @@ object Main extends App {
     projR.print
   """
 
-  def pgrmB = dsl""" 
+  def pgrmB = dsl"""
     val Rschema = Schema("number", "digit")
     val R = Relation.scan("data/R.csv", Rschema, "|")
     val Sschema = Schema("digit", "nombre")

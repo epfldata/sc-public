@@ -20,11 +20,12 @@ class SchemaLowering(override val IR: RelationDSLOpsPackaged) extends RecursiveR
   import IR.Predef._
   import IR.{__new, field, __lambda}
 
-  def convertToStaticSchema(schema: Rep[Schema]): Schema = {
-    schema match {
+  object StaticSchema {
+    def unapply(schema: Rep[Schema]): Option[Schema] = schema match {
       case dsl"Schema($xs*)" => 
-        val names = for(Constant(x) <- xs) yield x
-        new Schema(names.toList)
+        val names = xs map { case Constant(x) => x case _ => return None }
+        Some(new Schema(names.toList))
+      case _ => None
     }
   }
 
@@ -40,13 +41,12 @@ class SchemaLowering(override val IR: RelationDSLOpsPackaged) extends RecursiveR
   class Rec
 
   rewrite += symRule {
-    case rel @ dsl"Relation.scan(${Constant(fileName)}, $schema, ${Constant(delimiter)})" => 
-      val constantSchema = convertToStaticSchema(schema)
-      symbolSchema += rel -> constantSchema
+    case rel @ dsl"Relation.scan(${Constant(fileName)}, ${StaticSchema(schema)}, ${Constant(delimiter)})" => 
+      symbolSchema += rel -> schema
       val scanner = dsl"new RelationScanner($fileName, ${delimiter.charAt(0)})"
 
       implicit val recTp: TypeRep[Rec] = new RecordType[Rec](getClassTag, None)
-      def loadRecord: Rep[Rec] = __new[Rec](constantSchema.columns.map(column => (column, false, dsl"$scanner.next_string()")): _*)
+      def loadRecord: Rep[Rec] = __new[Rec](schema.columns.map(column => (column, false, dsl"$scanner.next_string()")): _*)
 
       dsl"""
           val arr = new Array[Rec](3)
@@ -61,11 +61,10 @@ class SchemaLowering(override val IR: RelationDSLOpsPackaged) extends RecursiveR
   }
 
   rewrite += symRule {
-    case rel @ dsl"(${ArrFromRelation(arr)}: Relation).project($schema)" => 
-      val constantSchema = convertToStaticSchema(schema)
-      symbolSchema += rel -> constantSchema
+    case rel @ dsl"(${ArrFromRelation(arr)}: Relation).project(${StaticSchema(schema)})" => 
+      symbolSchema += rel -> schema
       implicit val recTp: TypeRep[Rec] = new RecordType[Rec](getClassTag, None)
-      def copyRecord(e: Rep[Any]): Rep[Rec] = __new[Rec](constantSchema.columns.map(column => (column, false, field[String](e, column))): _*)
+      def copyRecord(e: Rep[Any]): Rep[Rec] = __new[Rec](schema.columns.map(column => (column, false, field[String](e, column))): _*)
       val newArr = dsl"new Array[Rec]($arr.length)"
       import IR.RangeRep
       IR.Range(dsl"0", dsl"$arr.length").foreach(__lambda({ (j: Rep[Int]) => 
