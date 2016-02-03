@@ -1,4 +1,4 @@
-SC Examples
+SC Public
 ===============
 
 This repository contains example Domain-Specific Languages (DSLs) defined using SC framework.
