@@ -12,7 +12,7 @@ It provides a `Relation` data type and associated classes, and ways to apply com
 
 
 ```scala
-class Relation(val underlying: List[Row]) {
+class Relation(val schema: Schema, val underlying: List[Row]) {
   def select(p: Row => Boolean): Relation = ...
   def project(schema: Schema): Relation = ...
   def join(o: Relation, cond: (Row, Row) => Boolean): Relation = ...
@@ -22,8 +22,8 @@ object Relation {
   def scan(filename: String, schema: Schema, delimiter: String): Relation = ...
 }
 
-class Row(val schema: Schema, val values: List[String]) {
-  def getField(fieldName: String): String = ...
+class Row(val values: List[String]) {
+  def getField(schema: Schema, fieldName: String): String = ...
 }
 
 class Schema(val columns: List[String])
