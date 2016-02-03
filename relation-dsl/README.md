@@ -224,13 +224,64 @@ class MyTransformer extends RuleBasedTransformer {
 
 ### Partial Evaluation of Schema
 
-[TODO]
+We have a nice and simple language for writing queries, but the execution is inefficient because it has to constantly
+read from the fields of a `Schema` and manipulate each row as a `List[String]` with no static size information.
+It's unfortunate, because we notice that in most applications, the schema is static, and thus the application could be
+specialized for specific schemas and avoid all that overhead.
+
+The first step is to match schemas that are actually static. For this, we write a Scala extractor that uses quasiquotes:
+
+```scala
+object StaticSchema {
+  def unapply(schema: Rep[Schema]): Option[Schema] = schema match {
+    case dsl"Schema($xs*)" =>
+      val names = xs map { case Constant(x) => x case _ => return None }
+      Some(new Schema(names.toList))
+    case _ => None
+  }
+}
+```
+
+It takes as input a `Rep[Schema]` and returns a `Schema` (notice: not a `Rep[Schema]`) if successful; otherwise `None.`
+For it to the extractor to be successful, every part of the schema has to be a constant.
+
+Having static `Schema`s is useful because we can now associate them with tailored record types that more efficiently store and access the fields.
+Creating a record type is done through the `__new[Rec](fields)` function, and can be used with a special syntax inside of quasiquotes.
+In the same transformation, we also _lower_ the representation of relations to simple arrays (see the [list tutorial](../list-dsl) for more info on lowerings).
+
+For implementing joins, we will also need to keep a static (compile-time) mapping of schema objects to their corresponding schema:
+
+```scala
+val symbolSchema = mutable.Map[Rep[_], Schema]()
+```
+
+Here is the code of the specialized impleemntation of `project`, implemented as a transformation:
+
+```scala
+rewrite += symRule {
+  case rel @ dsl"(${ArrFromRelation(arr)}: Relation).project(${StaticSchema(schema)})" => 
+    symbolSchema += rel -> schema
+    implicit val recTp: TypeRep[Rec] = new RecordType[Rec](getClassTag, None)
+    def copyRecord(e: Rep[Any]): Rep[Rec] = __new[Rec](schema.columns.map(column => (column, false, field[String](e, column))): _*)
+    val newArr = dsl"new Array[Rec]($arr.length)"
+    dsl"""
+      Range(0, $arr.length) foreach ${ __lambda[Int,Unit]((x: Rep[Int]) =>
+        dsl"$newArr($x) = ${ copyRecord( dsl"$arr($x)" ) }"
+      )}
+    """
+    newArr
+}
+```
+
+Notice how the `Range` part is a dsl block used merely for its side effects (which translate to side effects in the generated program).
+The `ArrFromRelation` extractor is defined in a way analogous to `ArrFromList` in the [list tutorial](../list-dsl).
 
 
 
+### Conclusion
 
-
-
+We have defined a simple Scala DSL for relational algebra, and implemented optimizations to specialize relations that have static schemas
+and to use low-level array constructs, thereby getting rid of execution overhead.
 
 
 

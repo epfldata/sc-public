@@ -22,7 +22,7 @@ class SchemaLowering(override val IR: RelationDSLOpsPackaged) extends RecursiveR
 
   object StaticSchema {
     def unapply(schema: Rep[Schema]): Option[Schema] = schema match {
-      case dsl"Schema($xs*)" => 
+      case dsl"Schema($xs*)" =>
         val names = xs map { case Constant(x) => x case _ => return None }
         Some(new Schema(names.toList))
       case _ => None
@@ -66,12 +66,12 @@ class SchemaLowering(override val IR: RelationDSLOpsPackaged) extends RecursiveR
       implicit val recTp: TypeRep[Rec] = new RecordType[Rec](getClassTag, None)
       def copyRecord(e: Rep[Any]): Rep[Rec] = __new[Rec](schema.columns.map(column => (column, false, field[String](e, column))): _*)
       val newArr = dsl"new Array[Rec]($arr.length)"
-      import IR.RangeRep
-      IR.Range(dsl"0", dsl"$arr.length").foreach(__lambda({ (j: Rep[Int]) => 
-      val e = dsl"$arr($j)"
-        dsl"$newArr($j) = ${copyRecord(e)}"
-      }))
-    newArr.asInstanceOf[Rep[Any]]
+      dsl"""
+        Range(0, $arr.length) foreach ${ __lambda[Int,Unit]((x: Rep[Int]) =>
+          dsl"$newArr($x) = ${ copyRecord( dsl"$arr($x)" ) }"
+        )}
+      """
+      newArr
   }
 
   rewrite += symRule {
