@@ -14,7 +14,7 @@ import pardis.deep.scalalib.io._
 import ch.epfl.data.sc.pardis.quasi.anf.{ BaseExt, BaseExtIR }
 import ch.epfl.data.sc.pardis.quasi.TypeParameters.MaybeParamTag
 
-trait RelationDSLOps extends Base with RelationOps with RelationScannerOps with ArrayOps with ScalaCoreOps with ch.epfl.data.sc.pardis.quasi.anf.BaseQuasiExp {  
+trait RelationDSLOps extends Base with RelationOps with RelationScannerOps with ArrayOps with ScalaCoreOps with ch.epfl.data.sc.pardis.quasi.anf.BaseQuasiExp with ArrayExtraOps {  
   // Type representation
   val RelationDSLType = RelationDSLIRs.RelationDSLType
   implicit val typeRelationDSL: TypeRep[RelationDSL] = RelationDSLType
@@ -37,6 +37,7 @@ object RelationDSLIRs extends Base {
   import RelationScannerIRs._
   import ArrayIRs._
   import ScalaCoreIRs._
+  import ArrayExtraIRs._
   // Type representation
   case object RelationDSLType extends TypeRep[RelationDSL] {
     def rebuild(newArguments: TypeRep[_]*): TypeRep[_] = RelationDSLType
@@ -69,11 +70,12 @@ object RelationDSLQuasiNodes extends BaseExtIR {
   import RelationScannerQuasiNodes._
   import ArrayQuasiNodes._
   import ScalaCoreQuasiNodes._
+  import ArrayExtraQuasiNodes._
   // case classes
   type RelationDSL = relation.shallow.RelationDSL
 }
 
-trait RelationDSLExtOps extends BaseExt with RelationExtOps with RelationScannerExtOps with ArrayExtOps with ScalaCoreExtOps with ch.epfl.data.sc.pardis.quasi.anf.BaseQuasiExt {
+trait RelationDSLExtOps extends BaseExt with RelationExtOps with RelationScannerExtOps with ArrayExtOps with ScalaCoreExtOps with ArrayExtraExtOps with ch.epfl.data.sc.pardis.quasi.anf.BaseQuasiExt {
   
   import RelationDSLQuasiNodes._
   import ch.epfl.data.sc.pardis.quasi.OverloadHackObj._
@@ -81,6 +83,7 @@ trait RelationDSLExtOps extends BaseExt with RelationExtOps with RelationScanner
   import RelationScannerQuasiNodes._
   import ArrayQuasiNodes._
   import ScalaCoreQuasiNodes._
+  import ArrayExtraQuasiNodes._
   implicit class RelationDSLRep(self : Rep[RelationDSL]) {
   }
   object RelationDSL {

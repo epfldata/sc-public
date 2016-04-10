@@ -4,6 +4,7 @@ package compiler
 import ch.epfl.data.sc.pardis
 import pardis.optimization._
 import pardis.compiler._
+import pardis.ir._
 import pardis.deep.scalalib.ScalaCoreCCodeGen
 import deep._
 
@@ -13,7 +14,10 @@ class MyCompiler(val DSL: RelationDSLOpsPackaged, name: String, offlineOptim: Bo
   
   pipeline += DCE
 
-  pipeline += new SchemaLowering(DSL)
+  val schemaAnalysis = new SchemaAnalysis(DSL)
+
+  pipeline += schemaAnalysis
+  pipeline += new SchemaLowering(DSL, schemaAnalysis)
 
   pipeline += DCE
   
@@ -31,7 +35,18 @@ class MyCompiler(val DSL: RelationDSLOpsPackaged, name: String, offlineOptim: Bo
     if(!cCodeGen) {
       new ScalaCodeGenerator with ASTCodeGenerator[RelationDSLOpsPackaged] {
         val IR = DSL
-        import pardis.utils.document.Document
+        import pardis.utils.document._
+          override def nodeToDocument(node: PardisNode[_]): Document = {
+    node match {
+      case PardisFor(start, end, step, variable, block)                    => 
+        val stepDoc = step match {
+          case Constant(1) => doc""
+          case _ => doc" by $step"
+        }
+        doc"for($variable <- $start until $end$stepDoc) ${blockToDocument(block)}"
+      case _ => super.nodeToDocument(node)
+    }
+  }
         override def header(): Document = s"""
           |package relation
           |import relation.shallow._""".stripMargin

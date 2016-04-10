@@ -11,6 +11,12 @@ object MirrorList {
   def apply[A](elems: A*): MirrorList[A] = ???
 }
 
+class ArrayExtra
+
+object ArrayExtra {
+  def __for(start: Int, end: Int)(f: Int => Unit): Unit = for(i <- 0 until end) f(i)
+}
+
 @deep
 @needs[List[_] :: Schema]
 class Row(val values: List[String]) {
