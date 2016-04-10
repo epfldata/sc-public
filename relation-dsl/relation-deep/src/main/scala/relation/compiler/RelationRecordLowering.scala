@@ -14,7 +14,7 @@ import relation.deep.RelationDSLOpsPackaged
 import relation.shallow._  
 import ArrayExtra.__for
 
-class SchemaLowering(override val IR: RelationDSLOpsPackaged, val schemaAnalysis: SchemaAnalysis) extends RecursiveRuleBasedTransformer[RelationDSLOpsPackaged](IR) {
+class RelationRecordLowering(override val IR: RelationDSLOpsPackaged, val schemaAnalysis: SchemaAnalysis) extends RecursiveRuleBasedTransformer[RelationDSLOpsPackaged](IR) {
   
   implicit val ctx = IR // for quasiquotes
   

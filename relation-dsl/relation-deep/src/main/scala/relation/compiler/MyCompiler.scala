@@ -17,7 +17,8 @@ class MyCompiler(val DSL: RelationDSLOpsPackaged, name: String, offlineOptim: Bo
   val schemaAnalysis = new SchemaAnalysis(DSL)
 
   pipeline += schemaAnalysis
-  pipeline += new SchemaLowering(DSL, schemaAnalysis)
+  pipeline += new RelationRecordLowering(DSL, schemaAnalysis)
+  // pipeline += new RelationColumnStoreLowering(DSL, schemaAnalysis)
 
   pipeline += DCE
   
