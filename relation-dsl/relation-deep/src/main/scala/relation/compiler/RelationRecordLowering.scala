@@ -125,13 +125,26 @@ class RelationRecordLowering(override val IR: RelationDSLOpsPackaged, override v
   def relationPrint(relation: Rep[Relation]): Unit = {
     val arr = getLoweredArray(relation)
     implicit val recTp: TypeRep[Rec] = arr.tp.typeArguments(0).asInstanceOf[TypeRep[Rec]]
-    dsl"""
-        for(j <- Range(0, $arr.length)) {
-          val e = $arr(j)
-          println(e)
+    val schema = getRelationSchema(relation)
+    def getRecordString(index: Rep[Int]): Rep[String] = {
+      val e = dsl"$arr($index)"
+      schema.columns.foldLeft((dsl""" "" """, true))((acc, field) => {
+        val fieldValue = dsl"__struct_field[String]($e, $field)"
+        if(acc._2) {
+          (fieldValue, false)
+        } else {
+          (dsl"""${acc._1} + "|" + $fieldValue""", false)
         }
+      })._1
+    }
+    dsl"""
+        Range(0, $arr.length) foreach ${ __lambda[Int,Unit]((i: Rep[Int]) =>
+          dsl"""
+            val str = ${getRecordString(i)} 
+            println(str)
+          """
+        )}
       """
-      ()
   }
 
 }
