@@ -29,6 +29,8 @@ trait ArrayExtraOps extends ArrayPartialEvaluation with RangePartialEvaluation w
   override def rangeForeach[U](self: Rep[Range], f: Rep[((Int) => U)])(implicit typeU: TypeRep[U]): Rep[Unit] =  selfObj.__for(self.start, self.end, self.step, (i: Rep[Int]) => __app(f).apply(i).asInstanceOf[Rep[Unit]])
 
   override def rangeApplyObject(start: Rep[Int], end: Rep[Int]): Rep[Range] =__newRange(start, end, unit(1))
+
+  override def arrayLength[T](self: Rep[Array[T]])(implicit typeT: TypeRep[T]): Rep[Int] = array_Field__length(self)
 }
 
 object ArrayExtraIRs
