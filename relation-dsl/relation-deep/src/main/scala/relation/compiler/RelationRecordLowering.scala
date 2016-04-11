@@ -16,7 +16,7 @@ import ArrayExtra.__for
 
 class RelationRecordLowering(override val IR: RelationDSLOpsPackaged, override val schemaAnalysis: SchemaAnalysis) extends RelationLowering(IR, schemaAnalysis) {
   import IR.Predef._
-  import IR.{__new, field, __lambda}
+  import IR.{__new, __lambda}
 
   private var recordsCount = 0
 
@@ -31,12 +31,12 @@ class RelationRecordLowering(override val IR: RelationDSLOpsPackaged, override v
 
   def getLoweredArray(relation: Rep[Relation]): Rep[Array[Rec]] = getRelationLowered(relation)
 
-  def relationScan(scanner: Rep[RelationScanner], schema: Schema, resultRelation: Rep[Relation]): LoweredRelation = {
+  def relationScan(scanner: Rep[RelationScanner], schema: Schema, size: Rep[Int], resultRelation: Rep[Relation]): LoweredRelation = {
     implicit val recTp: TypeRep[Rec] = new RecordType[Rec](getClassTag, None)
-      def loadRecord: Rep[Rec] = __new[Rec](schema.columns.map(column => (column, false, dsl"$scanner.next_string()")): _*)
+    def loadRecord: Rep[Rec] = __new[Rec](schema.columns.map(column => (column, false, dsl"$scanner.next_string()")): _*)
 
       dsl"""
-        val arr = new Array[Rec](3)
+        val arr = new Array[Rec]($size)
         var i = 0
         while($scanner.hasNext) {
           val rec = $loadRecord
@@ -49,7 +49,7 @@ class RelationRecordLowering(override val IR: RelationDSLOpsPackaged, override v
   def relationProject(relation: Rep[Relation], schema: Schema, resultRelation: Rep[Relation]): LoweredRelation = {
     val arr = getLoweredArray(relation)
     implicit val recTp: TypeRep[Rec] = new RecordType[Rec](getClassTag, None)
-      def copyRecord(e: Rep[Any]): Rep[Rec] = __new[Rec](schema.columns.map(column => (column, false, field[String](e, column))): _*)
+      def copyRecord(e: Rep[Any]): Rep[Rec] = __new[Rec](schema.columns.map(column => (column, false, dsl"__struct_field[String]($e, $column)")): _*)
       val newArr = dsl"new Array[Rec]($arr.length)"
       dsl"""
         Range(0, $arr.length) foreach ${ __lambda[Int,Unit]((x: Rep[Int]) =>
@@ -91,8 +91,8 @@ class RelationRecordLowering(override val IR: RelationDSLOpsPackaged, override v
       val sch2List = sch2.columns.filter(_ != rightKey)
       val newSchema = getRelationSchema(resultRelation)
       def joinRecords(e1: Rep[Any], e2: Rep[Any]): Rep[Rec] = {
-        __new[Rec](sch1List.map(column => (column, false, field[String](e1, column))) ++ 
-          sch2List.map(column => (column, false, field[String](e2, column))): _*)
+        __new[Rec](sch1List.map(column => (column, false, dsl"__struct_field[String]($e1, $column)")) ++ 
+          sch2List.map(column => (column, false, dsl"__struct_field[String]($e2, $column)")): _*)
       }
       def iterateOverTwoLists[T](f: (Rep[Any], Rep[Any]) => Rep[Unit]): Rep[Unit] = {
         dsl"""Range(0, $arr1.length) foreach ${

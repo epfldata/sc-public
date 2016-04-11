@@ -14,7 +14,7 @@ import pardis.deep.scalalib.io._
 import ch.epfl.data.sc.pardis.quasi.anf.{ BaseExt, BaseExtIR }
 import ch.epfl.data.sc.pardis.quasi.TypeParameters.MaybeParamTag
 
-trait RelationDSLOps extends Base with RelationOps with RelationScannerOps with ArrayOps with ScalaCoreOps with ch.epfl.data.sc.pardis.quasi.anf.BaseQuasiExp with ArrayExtraOps {  
+trait RelationDSLOps extends Base with RelationOps with RelationScannerOps with ArrayOps with ScalaCoreOps with ArrayExtraOps with ch.epfl.data.sc.pardis.quasi.anf.BaseQuasiExp {  
   // Type representation
   val RelationDSLType = RelationDSLIRs.RelationDSLType
   implicit val typeRelationDSL: TypeRep[RelationDSL] = RelationDSLType

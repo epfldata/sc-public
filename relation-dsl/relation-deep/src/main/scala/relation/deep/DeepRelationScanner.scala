@@ -31,7 +31,7 @@ trait RelationScannerOps extends Base  {
      def filename : Rep[String] = relationScanner_Field_Filename(self)
   }
   object RelationScanner {
-
+     def getNumLinesInFile(filePath : Rep[String]) : Rep[Int] = relationScannerGetNumLinesInFileObject(filePath)
   }
   // constructors
    def __newRelationScanner(filename : Rep[String], delimiter : Rep[Char]) : Rep[RelationScanner] = relationScannerNew(filename, delimiter)
@@ -58,6 +58,8 @@ trait RelationScannerOps extends Base  {
   type RelationScanner_Field_Delimiter = RelationScannerIRs.RelationScanner_Field_Delimiter
   val RelationScanner_Field_Filename = RelationScannerIRs.RelationScanner_Field_Filename
   type RelationScanner_Field_Filename = RelationScannerIRs.RelationScanner_Field_Filename
+  val RelationScannerGetNumLinesInFileObject = RelationScannerIRs.RelationScannerGetNumLinesInFileObject
+  type RelationScannerGetNumLinesInFileObject = RelationScannerIRs.RelationScannerGetNumLinesInFileObject
   // method definitions
    def relationScannerNew(filename : Rep[String], delimiter : Rep[Char]) : Rep[RelationScanner] = RelationScannerNew(filename, delimiter)
    def relationScannerNext_int(self : Rep[RelationScanner]) : Rep[Int] = RelationScannerNext_int(self)
@@ -70,6 +72,7 @@ trait RelationScannerOps extends Base  {
    def relationScannerHasNext(self : Rep[RelationScanner]) : Rep[Boolean] = RelationScannerHasNext(self)
    def relationScanner_Field_Delimiter(self : Rep[RelationScanner]) : Rep[Char] = RelationScanner_Field_Delimiter(self)
    def relationScanner_Field_Filename(self : Rep[RelationScanner]) : Rep[String] = RelationScanner_Field_Filename(self)
+   def relationScannerGetNumLinesInFileObject(filePath : Rep[String]) : Rep[Int] = RelationScannerGetNumLinesInFileObject(filePath)
   type RelationScanner = relation.shallow.RelationScanner
 }
 object RelationScannerIRs extends Base {
@@ -127,6 +130,10 @@ object RelationScannerIRs extends Base {
     override def curriedConstructor = (copy _)
     override def isPure = true
 
+  }
+
+  case class RelationScannerGetNumLinesInFileObject(filePath : Rep[String]) extends FunctionDef[Int](None, "RelationScanner.getNumLinesInFile", List(List(filePath))){
+    override def curriedConstructor = (copy _)
   }
 
   type RelationScanner = relation.shallow.RelationScanner
@@ -201,6 +208,10 @@ object RelationScannerQuasiNodes extends BaseExtIR {
     override def nodeUnapply(t: RelationScanner_Field_Filename): Option[Product] = (RelationScanner_Field_Filename.unapply(t): Option[Product]) map { r =>
       r }
   }
+  case class RelationScannerGetNumLinesInFileObjectExt(filePath : Rep[String]) extends FunctionDef[RelationScannerGetNumLinesInFileObject, Int] {
+    override def nodeUnapply(t: RelationScannerGetNumLinesInFileObject): Option[Product] = (RelationScannerGetNumLinesInFileObject.unapply(t): Option[Product]) map { r =>
+      r }
+  }
   type RelationScanner = relation.shallow.RelationScanner
 }
 
@@ -221,6 +232,7 @@ trait RelationScannerExtOps extends BaseExt {
      def filename : Rep[String] = relationScanner_Field_Filename(self)
   }
   object RelationScanner {
+     def getNumLinesInFile(filePath : Rep[String]) : Rep[Int] = relationScannerGetNumLinesInFileObject(filePath)
   }
   // constructors
    def __newRelationScanner(filename : Rep[String], delimiter : Rep[Char]) : Rep[RelationScanner] = relationScannerNew(filename, delimiter)
@@ -237,6 +249,7 @@ trait RelationScannerExtOps extends BaseExt {
    def relationScannerHasNext(self : Rep[RelationScanner]) : Rep[Boolean] = RelationScannerHasNextExt(self)
    def relationScanner_Field_Delimiter(self : Rep[RelationScanner]) : Rep[Char] = RelationScanner_Field_DelimiterExt(self)
    def relationScanner_Field_Filename(self : Rep[RelationScanner]) : Rep[String] = RelationScanner_Field_FilenameExt(self)
+   def relationScannerGetNumLinesInFileObject(filePath : Rep[String]) : Rep[Int] = RelationScannerGetNumLinesInFileObjectExt(filePath)
   type RelationScanner = relation.shallow.RelationScanner
 }
 

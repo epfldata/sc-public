@@ -28,7 +28,7 @@ abstract class RelationLowering(override val IR: RelationDSLOpsPackaged, val sch
 
   type LoweredRelation
 
-  def relationScan(scanner: Rep[RelationScanner], schema: Schema, resultRelation: Rep[Relation]): LoweredRelation
+  def relationScan(scanner: Rep[RelationScanner], schema: Schema, size: Rep[Int], resultRelation: Rep[Relation]): LoweredRelation
   def relationProject(relation: Rep[Relation], schema: Schema, resultRelation: Rep[Relation]): LoweredRelation
   def relationSelect(relation: Rep[Relation], field: String, value: Rep[String], resultRelation: Rep[Relation]): LoweredRelation
   def relationJoin(leftRelation: Rep[Relation], rightRelation: Rep[Relation], leftKey: String, rightKey: String, resultRelation: Rep[Relation]): LoweredRelation
@@ -39,8 +39,9 @@ abstract class RelationLowering(override val IR: RelationDSLOpsPackaged, val sch
       val relation = rel.asInstanceOf[Rep[Relation]]
       val schema = getRelationSchema(relation)
       val scanner = dsl"new RelationScanner($fileName, ${delimiter.charAt(0)})"
+      val size = dsl"RelationScanner.getNumLinesInFile($fileName)"
 
-      val res = relationScan(scanner, schema, relation)
+      val res = relationScan(scanner, schema, size, relation)
 
       loweredRelations += relation -> res
 
