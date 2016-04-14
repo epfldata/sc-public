@@ -2,6 +2,7 @@ package relation
 package compiler
 
 import ch.epfl.data.sc.pardis
+import ch.epfl.data.sc.pardis.deep.scalalib.ArrayIRs.Array_Field__length
 import pardis.optimization._
 import pardis.compiler._
 import pardis.ir._
@@ -18,7 +19,7 @@ class MyCompiler(val DSL: RelationDSLOpsPackaged, name: String, offlineOptim: Bo
 
   pipeline += schemaAnalysis
   pipeline += new RelationRecordLowering(DSL, schemaAnalysis)
-  // pipeline += new RelationColumnStoreLowering(DSL, schemaAnalysis)
+  //pipeline += new RelationColumnStoreLowering(DSL, schemaAnalysis)
 
   pipeline += DCE
   
@@ -45,6 +46,8 @@ class MyCompiler(val DSL: RelationDSLOpsPackaged, name: String, offlineOptim: Bo
           case _ => doc" by $step"
         }
         doc"for($variable <- $start until $end$stepDoc) ${blockToDocument(block)}"
+      case Array_Field__length(self)                    => 
+        doc"$self.length"
       case _ => super.nodeToDocument(node)
     }
   }

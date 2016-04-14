@@ -46,6 +46,7 @@ class RelationRecordLowering(override val IR: RelationDSLOpsPackaged, override v
         arr
       """
   }
+  // TODO: rm resultRelation
   def relationProject(relation: Rep[Relation], schema: Schema, resultRelation: Rep[Relation]): LoweredRelation = {
     val arr = getLoweredArray(relation)
     implicit val recTp: TypeRep[Rec] = new RecordType[Rec](getClassTag, None)
