@@ -34,7 +34,6 @@ class RelationRecordLowering(override val IR: RelationDSLOpsPackaged, override v
   def relationScan(scanner: Rep[RelationScanner], schema: Schema, size: Rep[Int], resultRelation: Rep[Relation]): LoweredRelation = {
     implicit val recTp: TypeRep[Rec] = new RecordType[Rec](getClassTag, None)
     def loadRecord: Rep[Rec] = __new[Rec](schema.columns.map(column => (column, false, dsl"$scanner.next_string()")): _*)
-
     dsl"""
       val arr = new Array[Rec]($size)
       var i = 0
@@ -50,13 +49,10 @@ class RelationRecordLowering(override val IR: RelationDSLOpsPackaged, override v
   def relationProject(relation: Rep[Relation], schema: Schema, resultRelation: Rep[Relation]): LoweredRelation = {
     val arr = getLoweredArray(relation)
     implicit val recTp: TypeRep[Rec] = new RecordType[Rec](getClassTag, None)
-    def copyRecord(e: Rep[Any]): Rep[Rec] = __new[Rec](schema.columns.map(column => (column, false, dsl"__struct_field[String]($e, $column)")): _*)
+    val copyRecord: Rep[Any] => Rep[Rec] =
+      e => __new[Rec](schema.columns.map(column => (column, false, dsl"__struct_field[String]($e, $column)")): _*)
     val newArr = dsl"new Array[Rec]($arr.length)"
-    dsl"""
-      Range(0, $arr.length) foreach ${ (x: Rep[Int]) =>
-        dsl"$newArr($x) = ${ copyRecord( dsl"$arr($x)" ) }"
-      }
-    """
+    dsl" for (i <- 0 until $arr.length) $newArr(i) = $copyRecord($arr(i)) "
     newArr
   }
   def relationSelect(relation: Rep[Relation], field: String, value: Rep[String], resultRelation: Rep[Relation]): LoweredRelation = {
@@ -64,7 +60,7 @@ class RelationRecordLowering(override val IR: RelationDSLOpsPackaged, override v
     implicit val recTp: TypeRep[Rec] = arr.tp.typeArguments(0).asInstanceOf[TypeRep[Rec]]
     dsl"""
       var size = 0
-      for(j <- Range(0, $arr.length)) {
+      for (j <- 0 until $arr.length) {
         val e = $arr(j)
         if(__struct_field[String](e, $field) == $value) {
           size = size + 1
@@ -72,7 +68,7 @@ class RelationRecordLowering(override val IR: RelationDSLOpsPackaged, override v
       }
       val arr = new Array[Rec](size)
       var i = 0
-      for(j <- Range(0, arr.length)) {
+      for(j <- 0 until arr.length) {
         val e = $arr(j)
         if(__struct_field[String](e, $field) == $value) {
           arr(i) = $arr(j)
@@ -96,17 +92,10 @@ class RelationRecordLowering(override val IR: RelationDSLOpsPackaged, override v
         sch2List.map(column => (column, false, dsl"__struct_field[String]($e2, $column)")): _*)
     }
     def iterateOverTwoLists[T](f: (Rep[Any], Rep[Any]) => Rep[Unit]): Rep[Unit] =
-      dsl"""Range(0, $arr1.length) foreach ${ (i: Rep[Int]) => 
-        val e1 = dsl"$arr1($i)"
-        dsl"""Range(0, $arr2.length) foreach ${ (j: Rep[Int]) => 
-            val e2 = dsl"$arr2($j)"
-            f(e1, e2)
-        }"""
-      }"""
-    
+      dsl" for (i <- 0 until $arr1.length; j <- 0 until $arr2.length) $f($arr1(i), $arr2(j)) "
     val size = newVar(dsl"0")
     iterateOverTwoLists((x, y) => 
-      dsl"if(__struct_field[String]($x, $leftKey) == __struct_field[String]($y, $rightKey)) $size = $size + 1"
+      dsl"if (__struct_field[String]($x, $leftKey) == __struct_field[String]($y, $rightKey)) $size = $size + 1"
     )
     val arr = dsl"new Array[Rec]($size)"
     val index = newVar(dsl"0")
@@ -115,7 +104,8 @@ class RelationRecordLowering(override val IR: RelationDSLOpsPackaged, override v
         if(__struct_field[String]($x, $leftKey) == __struct_field[String]($y, $rightKey)) {
           $arr($index) = ${joinRecords(x, y)}
           $index = $index + 1
-      }"""
+        }
+      """
     )
     arr
   }
@@ -123,7 +113,8 @@ class RelationRecordLowering(override val IR: RelationDSLOpsPackaged, override v
     val arr = getLoweredArray(relation)
     implicit val recTp: TypeRep[Rec] = arr.tp.typeArguments(0).asInstanceOf[TypeRep[Rec]]
     val schema = getRelationSchema(relation)
-    def getRecordString(index: Rep[Int]): Rep[String] = {
+    //def getRecordString(index: Rep[Int]): Rep[String] = {
+    val getRecordString = (index: Rep[Int]) => {
       val e = dsl"$arr($index)"
       schema.columns.foldLeft((dsl""" "" """, true))((acc, field) => {
         val fieldValue = dsl"__struct_field[String]($e, $field)"
@@ -134,14 +125,7 @@ class RelationRecordLowering(override val IR: RelationDSLOpsPackaged, override v
         }
       })._1
     }
-    dsl"""
-      Range(0, $arr.length) foreach ${ (i: Rep[Int]) =>
-        dsl"""
-          val str = ${getRecordString(i)} 
-          println(str)
-        """
-      }
-    """
+    dsl" for (i <- 0 until $arr.length) println($getRecordString(i)) "
   }
 
 }
