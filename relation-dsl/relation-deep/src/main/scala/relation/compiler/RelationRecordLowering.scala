@@ -31,7 +31,7 @@ class RelationRecordLowering(override val IR: RelationDSLOpsPackaged, override v
 
   def getLoweredArray(relation: Rep[Relation]): Rep[Array[Rec]] = getRelationLowered(relation)
 
-  def relationScan(scanner: Rep[RelationScanner], schema: Schema, size: Rep[Int], resultRelation: Rep[Relation]): LoweredRelation = {
+  def relationScan(scanner: Rep[RelationScanner], schema: Schema, size: Rep[Int], resultSchema: Schema): LoweredRelation = {
     implicit val recTp: TypeRep[Rec] = new RecordType[Rec](getClassTag, None)
     def loadRecord: Rep[Rec] = __new[Rec](schema.columns.map(column => (column, false, dsl"$scanner.next_string()")): _*)
     dsl"""
@@ -45,8 +45,7 @@ class RelationRecordLowering(override val IR: RelationDSLOpsPackaged, override v
       arr
     """
   }
-  // TODO: rm resultRelation
-  def relationProject(relation: Rep[Relation], schema: Schema, resultRelation: Rep[Relation]): LoweredRelation = {
+  def relationProject(relation: Rep[Relation], schema: Schema, resultSchema: Schema): LoweredRelation = {
     val arr = getLoweredArray(relation)
     implicit val recTp: TypeRep[Rec] = new RecordType[Rec](getClassTag, None)
     val copyRecord: Rep[Any] => Rep[Rec] =
@@ -55,7 +54,7 @@ class RelationRecordLowering(override val IR: RelationDSLOpsPackaged, override v
     dsl" for (i <- 0 until $arr.length) $newArr(i) = $copyRecord($arr(i)) "
     newArr
   }
-  def relationSelect(relation: Rep[Relation], field: String, value: Rep[String], resultRelation: Rep[Relation]): LoweredRelation = {
+  def relationSelect(relation: Rep[Relation], field: String, value: Rep[String], resultSchema: Schema): LoweredRelation = {
     val arr = getLoweredArray(relation)
     implicit val recTp: TypeRep[Rec] = arr.tp.typeArguments(0).asInstanceOf[TypeRep[Rec]]
     dsl"""
@@ -78,7 +77,7 @@ class RelationRecordLowering(override val IR: RelationDSLOpsPackaged, override v
       arr
     """
   }
-  def relationJoin(leftRelation: Rep[Relation], rightRelation: Rep[Relation], leftKey: String, rightKey: String, resultRelation: Rep[Relation]): LoweredRelation = {
+  def relationJoin(leftRelation: Rep[Relation], rightRelation: Rep[Relation], leftKey: String, rightKey: String, resultSchema: Schema): LoweredRelation = {
     implicit val recTp: TypeRep[Rec] = new RecordType[Rec](getClassTag, None)
     val arr1 = getLoweredArray(leftRelation)
     val arr2 = getLoweredArray(rightRelation)
@@ -86,7 +85,6 @@ class RelationRecordLowering(override val IR: RelationDSLOpsPackaged, override v
     val sch2 = getRelationSchema(rightRelation)
     val sch1List = sch1.columns
     val sch2List = sch2.columns.filter(_ != rightKey)
-    val newSchema = getRelationSchema(resultRelation)
     def joinRecords(e1: Rep[Any], e2: Rep[Any]): Rep[Rec] = {
       __new[Rec](sch1List.map(column => (column, false, dsl"__struct_field[String]($e1, $column)")) ++ 
         sch2List.map(column => (column, false, dsl"__struct_field[String]($e2, $column)")): _*)
@@ -113,7 +111,6 @@ class RelationRecordLowering(override val IR: RelationDSLOpsPackaged, override v
     val arr = getLoweredArray(relation)
     implicit val recTp: TypeRep[Rec] = arr.tp.typeArguments(0).asInstanceOf[TypeRep[Rec]]
     val schema = getRelationSchema(relation)
-    //def getRecordString(index: Rep[Int]): Rep[String] = {
     val getRecordString = (index: Rep[Int]) => {
       val e = dsl"$arr($index)"
       schema.columns.foldLeft((dsl""" "" """, true))((acc, field) => {

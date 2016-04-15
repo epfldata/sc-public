@@ -28,10 +28,10 @@ abstract class RelationLowering(override val IR: RelationDSLOpsPackaged, val sch
 
   type LoweredRelation
 
-  def relationScan(scanner: Rep[RelationScanner], schema: Schema, size: Rep[Int], resultRelation: Rep[Relation]): LoweredRelation
-  def relationProject(relation: Rep[Relation], schema: Schema, resultRelation: Rep[Relation]): LoweredRelation
-  def relationSelect(relation: Rep[Relation], field: String, value: Rep[String], resultRelation: Rep[Relation]): LoweredRelation
-  def relationJoin(leftRelation: Rep[Relation], rightRelation: Rep[Relation], leftKey: String, rightKey: String, resultRelation: Rep[Relation]): LoweredRelation
+  def relationScan(scanner: Rep[RelationScanner], schema: Schema, size: Rep[Int], resultSchema: Schema): LoweredRelation
+  def relationProject(relation: Rep[Relation], schema: Schema, resultSchema: Schema): LoweredRelation
+  def relationSelect(relation: Rep[Relation], field: String, value: Rep[String], resultSchema: Schema): LoweredRelation
+  def relationJoin(leftRelation: Rep[Relation], rightRelation: Rep[Relation], leftKey: String, rightKey: String, resultSchema: Schema): LoweredRelation
   def relationPrint(relation: Rep[Relation]): Unit
 
   rewrite += symRule {
@@ -41,7 +41,7 @@ abstract class RelationLowering(override val IR: RelationDSLOpsPackaged, val sch
       val scanner = dsl"new RelationScanner($fileName, ${delimiter.charAt(0)})"
       val size = dsl"RelationScanner.getNumLinesInFile($fileName)"
 
-      val res = relationScan(scanner, schema, size, relation)
+      val res = relationScan(scanner, schema, size, schema)
 
       loweredRelations += relation -> res
 
@@ -53,7 +53,7 @@ abstract class RelationLowering(override val IR: RelationDSLOpsPackaged, val sch
     val relation = rel.asInstanceOf[Rep[Relation]]
       val schema = getRelationSchema(relation)
 
-      val res = relationProject(rel1, schema, relation)
+      val res = relationProject(rel1, schema, schema)
 
       loweredRelations += relation -> res
 
@@ -63,7 +63,7 @@ abstract class RelationLowering(override val IR: RelationDSLOpsPackaged, val sch
   rewrite += symRule {
     case rel @ dsl"($rel1: Relation).select((x: Row) => x.getField($_, ${Constant(name)}) == ($value: String))" => {
       val relation = rel.asInstanceOf[Rep[Relation]]
-      val res = relationSelect(rel1, name, value, relation)
+      val res = relationSelect(rel1, name, value, getRelationSchema(relation))
 
       loweredRelations += relation -> res
 
@@ -76,7 +76,7 @@ abstract class RelationLowering(override val IR: RelationDSLOpsPackaged, val sch
       val relation = relr.asInstanceOf[Rep[Relation]]
       val (Constant(leftKey), Constant(rightKey)) = key1 -> key2
 
-      val res = relationJoin(rel1, rel2, leftKey, rightKey, relation)
+      val res = relationJoin(rel1, rel2, leftKey, rightKey, getRelationSchema(relation))
 
       loweredRelations += relation -> res
 
