@@ -9,7 +9,7 @@ import pardis.ir._
 import pardis.deep.scalalib.ScalaCoreCCodeGen
 import deep._
 
-class MyCompiler(val DSL: RelationDSLOpsPackaged, name: String, offlineOptim: Boolean = false, lowering: Int = 0, cCodeGen: Boolean = false) extends Compiler[RelationDSLOpsPackaged] {
+class RelationCompiler(val DSL: RelationDSLOpsPackaged, name: String) extends Compiler[RelationDSLOpsPackaged] {
   
   // Pipeline Definition:
   
@@ -23,18 +23,12 @@ class MyCompiler(val DSL: RelationDSLOpsPackaged, name: String, offlineOptim: Bo
 
   pipeline += DCE
   
-  if(cCodeGen) {
-    require(lowering > 2)
-    pipeline += ScalaCoreToC
-  }
   
-  
-  // Outputting Scala and C code inside an executable wrapper:
+  // Outputting Scala code inside an executable wrapper:
   
   import pardis.prettyprinter._
   
   val codeGenerator = 
-    if(!cCodeGen) {
       new ScalaCodeGenerator with ASTCodeGenerator[RelationDSLOpsPackaged] {
         val IR = DSL
         import pardis.utils.document._
@@ -61,20 +55,5 @@ class MyCompiler(val DSL: RelationDSLOpsPackaged, name: String, offlineOptim: Bo
           |}
           |""".stripMargin
       }
-    } else {
-      new ScalaCoreCCodeGen with CASTCodeGenerator[RelationDSLOpsPackaged] {
-        val IR = DSL
-        import IR.Predef._
-        import pardis.utils.document._
-        import pardis.ir._
-        import pardis.types._
-
-        override def pardisTypeToString[A](t: PardisType[A]): String = 
-          if (t.isArray)
-            pardisTypeToString(t.typeArguments(0)) + "*"
-          else
-            super.pardisTypeToString(t)
-      }
-    }
   
 }

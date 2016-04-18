@@ -15,7 +15,7 @@ object Build extends Build {
         "junit" % "junit-dep" % "4.10" % "test",
         "org.scalatest" % "scalatest_2.11" % "2.2.0" % "test",
         "ch.epfl.data" % "sc-pardis-compiler_2.11" % SCVersion,
-        "ch.epfl.lamp" % "scala-yinyang_2.11" % "0.2.0-SNAPSHOT"
+        "ch.epfl.lamp" % "scala-yinyang_2.11" % "0.2.0"
       )
       //, scalacOptions in Test ++= Seq("-optimize")
   )
