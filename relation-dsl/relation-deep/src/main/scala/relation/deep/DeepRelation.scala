@@ -236,6 +236,8 @@ trait SchemaOps extends Base with ListOps {
   val SchemaType = SchemaIRs.SchemaType
   implicit val typeSchema: TypeRep[Schema] = SchemaType
   implicit class SchemaRep(self : Rep[Schema]) {
+     def size : Rep[Int] = schemaSize(self)
+     def indexOf(columnName : Rep[String]) : Rep[Int] = schemaIndexOf(self, columnName)
      def columns : Rep[List[String]] = schema_Field_Columns(self)
   }
   object Schema {
@@ -246,12 +248,18 @@ trait SchemaOps extends Base with ListOps {
   // IR defs
   val SchemaNew = SchemaIRs.SchemaNew
   type SchemaNew = SchemaIRs.SchemaNew
+  val SchemaSize = SchemaIRs.SchemaSize
+  type SchemaSize = SchemaIRs.SchemaSize
+  val SchemaIndexOf = SchemaIRs.SchemaIndexOf
+  type SchemaIndexOf = SchemaIRs.SchemaIndexOf
   val Schema_Field_Columns = SchemaIRs.Schema_Field_Columns
   type Schema_Field_Columns = SchemaIRs.Schema_Field_Columns
   val SchemaApplyObject = SchemaIRs.SchemaApplyObject
   type SchemaApplyObject = SchemaIRs.SchemaApplyObject
   // method definitions
    def schemaNew(columns : Rep[List[String]]) : Rep[Schema] = SchemaNew(columns)
+   def schemaSize(self : Rep[Schema]) : Rep[Int] = SchemaSize(self)
+   def schemaIndexOf(self : Rep[Schema], columnName : Rep[String]) : Rep[Int] = SchemaIndexOf(self, columnName)
    def schema_Field_Columns(self : Rep[Schema]) : Rep[List[String]] = Schema_Field_Columns(self)
    def schemaApplyObject(columns : Rep[String]*) : Rep[Schema] = {
     val columnsOutput = __liftSeq(columns.toSeq)
@@ -273,6 +281,14 @@ object SchemaIRs extends Base {
     override def curriedConstructor = (copy _)
   }
 
+  case class SchemaSize(self : Rep[Schema]) extends FunctionDef[Int](Some(self), "size", List()){
+    override def curriedConstructor = (copy _)
+  }
+
+  case class SchemaIndexOf(self : Rep[Schema], columnName : Rep[String]) extends FunctionDef[Int](Some(self), "indexOf", List(List(columnName))){
+    override def curriedConstructor = (copy _).curried
+  }
+
   case class Schema_Field_Columns(self : Rep[Schema]) extends FieldDef[List[String]](self, "columns"){
     override def curriedConstructor = (copy _)
     override def isPure = true
@@ -287,6 +303,8 @@ object SchemaIRs extends Base {
 
   case class SchemaApplyObject(columnsOutput : Rep[Seq[String]]) extends FunctionDef[Schema](None, "Schema.apply", List(List(__varArg(columnsOutput)))){
     override def curriedConstructor = (copy _)
+    override def isPure = true
+
   }
 
   type Schema = relation.shallow.Schema
@@ -318,6 +336,14 @@ object SchemaQuasiNodes extends BaseExtIR {
     override def nodeUnapply(t: SchemaNew): Option[Product] = (SchemaNew.unapply(t): Option[Product]) map { r =>
       r }
   }
+  case class SchemaSizeExt(self : Rep[Schema]) extends FunctionDef[SchemaSize, Int] {
+    override def nodeUnapply(t: SchemaSize): Option[Product] = (SchemaSize.unapply(t): Option[Product]) map { r =>
+      r }
+  }
+  case class SchemaIndexOfExt(self : Rep[Schema], columnName : Rep[String]) extends FunctionDef[SchemaIndexOf, Int] {
+    override def nodeUnapply(t: SchemaIndexOf): Option[Product] = (SchemaIndexOf.unapply(t): Option[Product]) map { r =>
+      r }
+  }
   case class Schema_Field_ColumnsExt(self : Rep[Schema]) extends FunctionDef[Schema_Field_Columns, List[String]] {
     override def nodeUnapply(t: Schema_Field_Columns): Option[Product] = (Schema_Field_Columns.unapply(t): Option[Product]) map { r =>
       r }
@@ -335,6 +361,8 @@ trait SchemaExtOps extends BaseExt with ListExtOps {
   import ch.epfl.data.sc.pardis.quasi.OverloadHackObj._
   import ListQuasiNodes._
   implicit class SchemaRep(self : Rep[Schema]) {
+     def size : Rep[Int] = schemaSize(self)
+     def indexOf(columnName : Rep[String]) : Rep[Int] = schemaIndexOf(self, columnName)
      def columns : Rep[List[String]] = schema_Field_Columns(self)
   }
   object Schema {
@@ -345,6 +373,8 @@ trait SchemaExtOps extends BaseExt with ListExtOps {
   
   // method definitions
    def schemaNew(columns : Rep[List[String]]) : Rep[Schema] = SchemaNewExt(columns)
+   def schemaSize(self : Rep[Schema]) : Rep[Int] = SchemaSizeExt(self)
+   def schemaIndexOf(self : Rep[Schema], columnName : Rep[String]) : Rep[Int] = SchemaIndexOfExt(self, columnName)
    def schema_Field_Columns(self : Rep[Schema]) : Rep[List[String]] = Schema_Field_ColumnsExt(self)
    def schemaApplyObject(columns : Rep[String]*) : Rep[Schema] = {
       val columnsOutput = __liftSeq(columns.toSeq)

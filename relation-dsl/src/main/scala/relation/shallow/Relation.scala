@@ -1,6 +1,8 @@
 package relation
 package shallow
 
+import java.util.NoSuchElementException
+
 import ch.epfl.data.sc.pardis.annotations._
 
 @deep
@@ -28,9 +30,17 @@ class Row(val values: List[String]) {
 
 @deep
 @needs[List[_]]
-class Schema(val columns: List[String])
+class Schema(val columns: List[String]) {
+  def size = columns.size
+  def indexOf(columnName: String) = {
+    val i = columns.indexOf(columnName)
+    if (i < 0) throw new NoSuchElementException
+    i
+  }
+}
 
 object Schema {
+  @pure
   def apply(columns: String*): Schema = new Schema(columns.toList)
 }
 
