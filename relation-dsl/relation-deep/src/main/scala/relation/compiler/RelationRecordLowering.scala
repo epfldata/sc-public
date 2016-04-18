@@ -1,8 +1,6 @@
 package relation
 package compiler
 
-import scala.collection.mutable.ArrayBuffer
-
 import ch.epfl.data.sc.pardis
 import pardis.optimization.RecursiveRuleBasedTransformer
 import pardis.quasi.TypeParameters._
@@ -29,8 +27,6 @@ class RelationRecordLowering(override val IR: RelationDSLOpsPackaged, override v
 
   type LoweredRelation = Rep[Array[Rec]]
 
-  def getLoweredArray(relation: Rep[Relation]): Rep[Array[Rec]] = getRelationLowered(relation)
-
   def relationScan(scanner: Rep[RelationScanner], schema: Schema, size: Rep[Int], resultSchema: Schema): LoweredRelation = {
     implicit val recTp: TypeRep[Rec] = new RecordType[Rec](getClassTag, None)
     def loadRecord: Rep[Rec] = __new[Rec](schema.columns.map(column => (column, false, dsl"$scanner.next_string()")): _*)
@@ -46,7 +42,7 @@ class RelationRecordLowering(override val IR: RelationDSLOpsPackaged, override v
     """
   }
   def relationProject(relation: Rep[Relation], schema: Schema, resultSchema: Schema): LoweredRelation = {
-    val arr = getLoweredArray(relation)
+    val arr = getRelationLowered(relation)
     implicit val recTp: TypeRep[Rec] = new RecordType[Rec](getClassTag, None)
     val copyRecord: Rep[Any] => Rep[Rec] =
       e => __new[Rec](schema.columns.map(column => (column, false, dsl"__struct_field[String]($e, $column)")): _*)
@@ -55,7 +51,7 @@ class RelationRecordLowering(override val IR: RelationDSLOpsPackaged, override v
     newArr
   }
   def relationSelect(relation: Rep[Relation], field: String, value: Rep[String], resultSchema: Schema): LoweredRelation = {
-    val arr = getLoweredArray(relation)
+    val arr = getRelationLowered(relation)
     implicit val recTp: TypeRep[Rec] = arr.tp.typeArguments(0).asInstanceOf[TypeRep[Rec]]
     dsl"""
       var size = 0
@@ -79,8 +75,8 @@ class RelationRecordLowering(override val IR: RelationDSLOpsPackaged, override v
   }
   def relationJoin(leftRelation: Rep[Relation], rightRelation: Rep[Relation], leftKey: String, rightKey: String, resultSchema: Schema): LoweredRelation = {
     implicit val recTp: TypeRep[Rec] = new RecordType[Rec](getClassTag, None)
-    val arr1 = getLoweredArray(leftRelation)
-    val arr2 = getLoweredArray(rightRelation)
+    val arr1 = getRelationLowered(leftRelation)
+    val arr2 = getRelationLowered(rightRelation)
     val sch1 = getRelationSchema(leftRelation)
     val sch2 = getRelationSchema(rightRelation)
     val sch1List = sch1.columns
@@ -108,7 +104,7 @@ class RelationRecordLowering(override val IR: RelationDSLOpsPackaged, override v
     arr
   }
   def relationPrint(relation: Rep[Relation]): Unit = {
-    val arr = getLoweredArray(relation)
+    val arr = getRelationLowered(relation)
     implicit val recTp: TypeRep[Rec] = arr.tp.typeArguments(0).asInstanceOf[TypeRep[Rec]]
     val schema = getRelationSchema(relation)
     val getRecordString = (index: Rep[Int]) => {
