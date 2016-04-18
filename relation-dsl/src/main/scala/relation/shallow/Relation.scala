@@ -25,7 +25,7 @@ class Row(val values: List[String]) {
       value
   }).get
 
-  override def toString: String = values.mkString(", ")
+  override def toString: String = values.mkString("|")
 }
 
 @deep
@@ -70,7 +70,7 @@ class Relation(val schema: Schema, val underlying: List[Row]) {
   }
   override def toString: String = {
     val sb = new StringBuilder
-    sb ++= schema.columns.mkString(", ") + "\n"
+    sb ++= schema.columns.mkString("|") + "\n"
     for(r <- underlying) {
       sb ++= r.toString
       sb ++= "\n"
@@ -80,7 +80,6 @@ class Relation(val schema: Schema, val underlying: List[Row]) {
 }
 
 object Relation {
-  // FIXME delimiter should be Char, but because we don't have liftEvidence for Char we don't do it now.
   def scan(filename: String, schema: Schema, delimiter: String): Relation = {
     val sc = new java.util.Scanner(new java.io.File(filename))
     val buf = new scala.collection.mutable.ArrayBuffer[Row]()

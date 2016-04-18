@@ -1,26 +1,26 @@
 package relation.shallow
 
 object Main extends App {
-  val s = Schema("number", "digit")
-  val r = Relation.scan("data/R.csv", s, "|")
-  r.print
+  val schema = Schema("number", "digit")
+  val en = Relation.scan("data/En.csv", schema, "|")
+  en.print
 }
 
 object PgrmA extends App {
     val schema = Schema("number", "digit")
-    val R = Relation.scan("data/R.csv", schema, "|")
-    val selR = R.select(x => x.getField(schema, "number") == "one")
-    val projR = selR.project(Schema("number"))
-    projR.print
+    val En = Relation.scan("data/En.csv", schema, "|")
+    val selEn = En.select(x => x.getField(schema, "number") == "one")
+    val projEn = selEn.project(Schema("number"))
+    projEn.print
 }
 
 object PgrmB extends App {
-    val Rschema = Schema("number", "digit")
-    val R = Relation.scan("data/R.csv", Rschema, "|")
-    val Sschema = Schema("digit", "nombre")
-    val S = Relation.scan("data/S.csv", Sschema, "|")
-    val RS = R.join(S, "digit", "digit")
-    RS.print
+    val EnSchema = Schema("number", "digit")
+    val En = Relation.scan("data/En.csv", EnSchema, "|")
+    val FrSchema = Schema("digit", "nombre")
+    val Fr = Relation.scan("data/Fr.csv", FrSchema, "|")
+    val EnFr = En.join(Fr, "digit", "digit")
+    EnFr.print
 }
 
 

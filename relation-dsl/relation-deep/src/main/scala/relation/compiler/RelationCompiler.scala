@@ -10,7 +10,7 @@ import pardis.utils.document._
 import pardis.prettyprinter._
 import deep._
 
-class RelationCompiler(val DSL: RelationDSLOpsPackaged, name: String) extends Compiler[RelationDSLOpsPackaged] {
+class RelationCompiler(val DSL: RelationDSLOpsPackaged, name: String = "GenApp") extends Compiler[RelationDSLOpsPackaged] {
   
   // Pipeline Definition:
   pipeline += DCE
@@ -40,4 +40,11 @@ class RelationCompiler(val DSL: RelationDSLOpsPackaged, name: String) extends Co
           |""".stripMargin
       }
   
+  def compile(program: => DSL.Rep[Unit]): Unit = {
+    import DSL.Predef._
+    val folder = "src/main/scala"
+    // Creates the directories if do not already exist!
+    new java.io.File(s"generator-out/$folder").mkdirs()
+    compile(program, s"$folder/$name")
+  }
 }
