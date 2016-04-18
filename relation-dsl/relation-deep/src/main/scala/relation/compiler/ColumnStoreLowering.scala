@@ -14,7 +14,7 @@ import relation.deep.RelationDSLOpsPackaged
 import relation.shallow._  
 import ArrayExtra.__for
 
-class RelationColumnStoreLowering(override val IR: RelationDSLOpsPackaged, override val schemaAnalysis: SchemaAnalysis) extends RelationLowering(IR, schemaAnalysis) {
+class ColumnStoreLowering(override val IR: RelationDSLOpsPackaged, override val schemaAnalysis: SchemaAnalysis) extends RelationLowering(IR, schemaAnalysis) {
   import IR.Predef._
   
   type LoweredRelation = Nothing // TODO

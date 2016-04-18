@@ -18,8 +18,8 @@ class RelationCompiler(val DSL: RelationDSLOpsPackaged, name: String) extends Co
   val schemaAnalysis = new SchemaAnalysis(DSL)
 
   pipeline += schemaAnalysis
-  pipeline += new RelationRecordLowering(DSL, schemaAnalysis)
-  //pipeline += new RelationColumnStoreLowering(DSL, schemaAnalysis)
+  pipeline += new RecordsLowering(DSL, schemaAnalysis)
+  //pipeline += new ColumnStoreLowering(DSL, schemaAnalysis)
 
   pipeline += DCE
   
