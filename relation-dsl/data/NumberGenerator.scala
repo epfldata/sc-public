@@ -1,8 +1,8 @@
 
 object NumberGenerator {
   def main(args: Array[String]) {
-    val lang = 'Eng
-    //val lang = 'Fra
+    //val lang = 'Eng
+    val lang = 'Fra
     
     
     val zero = "zero"
