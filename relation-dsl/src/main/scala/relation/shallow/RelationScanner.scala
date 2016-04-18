@@ -104,3 +104,10 @@ class RelationScanner(filename: String, delimiter: Char) {
     f
   }
 }
+
+object RelationScanner {
+  def getNumLinesInFile(filePath: String): Int = {
+    scala.io.Source.fromFile(filePath).getLines.size
+  }
+}
+

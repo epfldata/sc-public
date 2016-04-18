@@ -26,6 +26,13 @@ object Main extends App {
     RS.print
   """
   
+  def pgrmC = dsl"""
+    val Rschema = Schema("number", "digit")
+    val R = Relation.scan("data/R.csv", Rschema, "|").select(x => x.getField(Rschema, "number") == "one")
+    val projR = R.project(Schema("number"))
+    projR.print
+  """
+  
   def pgrm = pgrmB
   
   {
