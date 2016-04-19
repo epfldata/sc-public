@@ -45,7 +45,7 @@ The problem was that in the deep embedding DSL trait, there is no deep `Symbol` 
 When compiling an extraction (or `unapply`) QQ, the compiler cannot always infer the right types.
 For example, in `case dsl"$n + 1 => ...`, the compiler has no way of guessing which overloaded `+` operation is matched (is it `+` from `Int`, `String`, `Double`, etc.?).
 
-However, sometimes the type is not really relevant. For example, consider the rewriting `case dsl"List($a,$b)" => dsl"List($b,$a)`. This is why the QQ macro will type-check such extractor as `case dsl"List[?A]($a,$b)" =>`, where `?A` is a *synthetic*, existential type parameter generated on the fly foe this purpose. This mechanism is limited, however, and may not always infer all possible combinations of types that would make the pattern type-check.
+However, sometimes the type is not really relevant. For example, consider the rewriting `case dsl"List($a,$b)" => dsl"List($b,$a)`. This is why the QQ macro will type-check such extractor as `case dsl"List[?A]($a,$b)" =>`, where `?A` is a *synthetic*, existential type parameter generated on the fly for this purpose. This mechanism is limited, however, and may not always infer all possible combinations of types that would make the pattern type-check.
 
 
 ## Solutions to Help Debugging
