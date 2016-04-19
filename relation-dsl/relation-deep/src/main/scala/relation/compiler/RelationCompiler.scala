@@ -45,8 +45,14 @@ class RelationCompiler(val DSL: RelationDSLOpsPackaged) extends Compiler[Relatio
   def compile(program: => DSL.Rep[Unit]): Unit = {
     import DSL.Predef._
     val folder = "src/main/scala"
-    // Creates the directories if do not already exist!
+    
+    // Create the directories if it does not already exist
     new java.io.File(s"generator-out/$folder").mkdirs()
-    compile(program, s"$folder/$outputFileName")
+    
+    try compile(program, s"$folder/$outputFileName")
+    catch {
+      case LoweringException(msg) =>
+        System.err.println("Error during lowering: "+msg)
+    }
   }
 }

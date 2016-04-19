@@ -13,6 +13,8 @@ import pardis.ir._
 import relation.deep.RelationDSLOpsPackaged
 import relation.shallow._ 
 
+case class LoweringException(msg: String) extends Exception(msg)
+
 abstract class RelationLowering(override val IR: RelationDSLOpsPackaged, val schemaAnalysis: SchemaAnalysis) extends RecursiveRuleBasedTransformer[RelationDSLOpsPackaged](IR) {
   
   implicit val ctx = IR // for quasiquotes
@@ -21,7 +23,10 @@ abstract class RelationLowering(override val IR: RelationDSLOpsPackaged, val sch
 
   val loweredRelations = scala.collection.mutable.Map[Rep[Relation], LoweredRelation]()
 
-  def getRelationSchema(relation: Rep[Relation]): Schema = schemaAnalysis.symbolSchema(relation)
+  def getRelationSchema(relation: Rep[Relation]): Schema = schemaAnalysis.symbolSchema get relation match {
+    case Some(s) => s
+    case None => throw LoweringException(s"Could not find static schema for relation $relation")
+  }
 
   def getRelationLowered(relation: Rep[Relation]): LoweredRelation = loweredRelations(relation)
 
@@ -60,43 +65,39 @@ abstract class RelationLowering(override val IR: RelationDSLOpsPackaged, val sch
   }
 
   rewrite += symRule {
-    case rel @ dsl"($rel1: Relation).select((x: Row) => x.getField($_, ${Constant(name)}) == ($value: String))" => {
+    
+    case rel @ dsl"($rel1: Relation).select((x: Row) => x.getField($_, ${Constant(name)}) == ($value: String))" =>
       val relation = rel.asInstanceOf[Rep[Relation]]
       val res = relationSelect(rel1, name, value, getRelationSchema(relation))
-
+  
       loweredRelations += relation -> res
-
+  
       unit()
-    }
-  }
-
-  rewrite += symRule {
-    case rel @ dsl"($rel1: Relation).select($f)" => {
       
-      throw new Exception(s"The only supported function for selection is `x => x.getField(schema, name) == value`!")
-
+    case rel @ dsl"($rel1: Relation).select($f)" =>
+  
+      throw LoweringException(s"Selection function should be of the shape `x => x.getField(schema, name) == value`")
+  
       unit()
-    }
+      
   }
 
   rewrite += symRule {
-    case relr @ dsl"($rel1: Relation).join($rel2, $key1, $key2)" => {
+    case relr @ dsl"($rel1: Relation).join($rel2, $key1, $key2)" =>
       val relation = relr.asInstanceOf[Rep[Relation]]
       val (Constant(leftKey), Constant(rightKey)) = key1 -> key2
-
+  
       val res = relationJoin(rel1, rel2, leftKey, rightKey, getRelationSchema(relation))
-
+  
       loweredRelations += relation -> res
-
+  
       unit()
-    }
   }
 
   rewrite += symRule {
-    case dsl"($rel: Relation).print" => {
+    case dsl"($rel: Relation).print" =>
       relationPrint(rel)
-      
+  
       unit()
-    }
   }
 }

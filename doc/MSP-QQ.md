@@ -5,7 +5,7 @@ either at run time or at compile time (although the original vision focused only
 We recommend one to read <a name="Taha2004">[1]</a> to get an idea of that technique.
 Similar to MetaOCaml, SC implements quasiquotes, but as a Scala library (no need to modify the Scala compiler). 
 The syntax uses Scala's generalization of string interpolation – for example `dsl"42"` represents a program fragment for the constant integer `42`.
-The type of that expression is `Rep[Int]`, similar to MetaOCaml's `int code`'.
+The type of that expression is `Rep[Int]`, similar to MetaOCaml's `int code`.
 
 
 ## Construction \& Extraction
