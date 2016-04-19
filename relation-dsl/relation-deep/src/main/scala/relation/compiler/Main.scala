@@ -32,7 +32,7 @@ object Main extends App {
     projEn.print
   """
   
-  def pgrm = pgrmB
+  def pgrm = pgrmA
   
   val compiler = new RelationCompiler(Context)
 

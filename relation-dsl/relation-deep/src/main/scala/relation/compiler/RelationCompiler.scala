@@ -10,7 +10,7 @@ import pardis.utils.document._
 import pardis.prettyprinter._
 import deep._
 
-class RelationCompiler(val DSL: RelationDSLOpsPackaged, name: String = "GenApp") extends Compiler[RelationDSLOpsPackaged] {
+class RelationCompiler(val DSL: RelationDSLOpsPackaged) extends Compiler[RelationDSLOpsPackaged] {
   
   // Pipeline Definition:
   pipeline += DCE
@@ -33,18 +33,20 @@ class RelationCompiler(val DSL: RelationDSLOpsPackaged, name: String = "GenApp")
           |package relation
           |import relation.shallow._""".stripMargin
         override def getTraitSignature(): Document = s"""
-          |object $name {
+          |object $outputFileName {
           |  def main(args: Array[String]): Unit = """.stripMargin
         override def footer(): Document = s"""
           |}
           |""".stripMargin
       }
+
+  val outputFileName: String = "GenApp"
   
   def compile(program: => DSL.Rep[Unit]): Unit = {
     import DSL.Predef._
     val folder = "src/main/scala"
     // Creates the directories if do not already exist!
     new java.io.File(s"generator-out/$folder").mkdirs()
-    compile(program, s"$folder/$name")
+    compile(program, s"$folder/$outputFileName")
   }
 }

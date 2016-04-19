@@ -72,6 +72,15 @@ abstract class RelationLowering(override val IR: RelationDSLOpsPackaged, val sch
   }
 
   rewrite += symRule {
+    case rel @ dsl"($rel1: Relation).select($f)" => {
+      
+      throw new Exception(s"The only supported function for selection is `x => x.getField(schema, name) == value`!")
+
+      unit()
+    }
+  }
+
+  rewrite += symRule {
     case relr @ dsl"($rel1: Relation).join($rel2, $key1, $key2)" => {
       val relation = relr.asInstanceOf[Rep[Relation]]
       val (Constant(leftKey), Constant(rightKey)) = key1 -> key2

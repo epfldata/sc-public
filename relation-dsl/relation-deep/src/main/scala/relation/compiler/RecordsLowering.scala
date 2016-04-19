@@ -63,7 +63,7 @@ class RecordsLowering(override val IR: RelationDSLOpsPackaged, override val sche
       }
       val arr = new Array[Rec](size)
       var i = 0
-      for(j <- 0 until arr.length) {
+      for(j <- 0 until $arr.length) {
         val e = $arr(j)
         if(__struct_field[String](e, $field) == $value) {
           arr(i) = $arr(j)
