@@ -91,6 +91,6 @@ gen { x => dsl"$x + 1" }
 
 <sup>[[1]](#Taha2004)</sup> W. Taha. Domain-Specific Program Generation: International Seminar, Dagstuhl Castle, Germany, March 23-28, 2003. Revised Papers, chapter [A Gentle Introduction to Multi-stage Programming](https://www.cs.rice.edu/~taha/publications/journal/dspg04a.pdf), pages 30–50. Springer Berlin Heidelberg, Berlin, Heidelberg, 2004. 
 
-<sup>[[2]](#LMS)</sup> T. Rompf and M. Odersky. [Lightweight modular staging: a pragmatic ap- proach to runtime code generation and compiled DSLs](http://infoscience.epfl.ch/record/150347/files/gpce63-rompf.pdf). In Generative Pro- gramming and Component Engineering, pages 127–136, 2010.
+<sup>[[2]](#LMS)</sup> T. Rompf and M. Odersky. [Lightweight modular staging: a pragmatic ap- proach to runtime code generation and compiled DSLs](http://infoscience.epfl.ch/record/150347/files/gpce63-rompf.pdf). In Generative Programming and Component Engineering, pages 127–136, 2010.
 
 

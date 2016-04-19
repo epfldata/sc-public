@@ -160,7 +160,7 @@ object MyCompiler extends Compiler[RelationDSLOpsPackaged] {
 MyCompiler.compile(pgrm, "src/main/scala/GeneratedApp")
 ```
 
-(See file [MyCompiler.scala](relation-deep/src/main/scala/relation/compiler/MyCompiler.scala) for an example definition of `codeGenerator`.)
+(See file [RelationCompiler.scala](relation-deep/src/main/scala/relation/compiler/RelationCompiler.scala) for an example definition of `codeGenerator`.)
 
 
 
@@ -257,10 +257,11 @@ rewrite += symRule {
   case rel @ dsl"(${ArrFromRelation(arr)}: Relation).project(${StaticSchema(schema)})" => 
     symbolSchema += rel -> schema
     implicit val recTp: TypeRep[Rec] = new RecordType[Rec](getClassTag, None)
-    def copyRecord(e: Rep[Any]): Rep[Rec] = __new[Rec](schema.columns.map(column => (column, false, field[String](e, column))): _*)
+    def copyRecord(e: Rep[Any]): Rep[Rec] =
+      __new[Rec](schema.columns.map(column => (column, false, field[String](e, column))): _*)
     val newArr = dsl"new Array[Rec]($arr.length)"
     dsl"""
-      Range(0, $arr.length) foreach ${ __lambda[Int,Unit]((x: Rep[Int]) =>
+      (0 until $arr.length) foreach ${ __lambda[Int,Unit]((x: Rep[Int]) =>
         dsl"$newArr($x) = ${ copyRecord( dsl"$arr($x)" ) }"
       )}
     """
@@ -268,8 +269,28 @@ rewrite += symRule {
 }
 ```
 
-Notice how the `Range` part is a dsl block used merely for its side effects (which translate to side effects in the generated program).
+Notice how the `(0 until $arr.length)` part is a dsl block used merely for its side effects (which translate to side effects in the generated program).
 The `ArrFromRelation` extractor is defined in a way analogous to `ArrFromList` in the [list tutorial](../list-dsl).
+
+The code above can be simplified thanks to meta-function splicing, which allows us to splice in a meta function, of type `Rep[A] => Rep[B]` as if it was a `Rep[A => B]`, removing the need for the ugly `__lambda` conversion function:
+
+
+```scala
+rewrite += symRule {
+  case rel @ dsl"(${ArrFromRelation(arr)}: Relation).project(${StaticSchema(schema)})" => 
+    symbolSchema += rel -> schema
+    implicit val recTp: TypeRep[Rec] = new RecordType[Rec](getClassTag, None)
+    val copyRecord = (e: Rep[Any]) =>
+      __new[Rec](schema.columns.map(column => (column, false, field[String](e, column))): _*)
+    dsl"""
+      val newArr = new Array[Rec]($arr.length)
+      for (i <- 0 until $arr.length) newArr(i) = $copyRecord($arr(i))
+      newArr
+    """
+}
+```
+
+The simplified solution above does apply `opyRecord` in the object language (as opposed to applying it in the meta language as in the initial code), so it looks like it would add some runtime overhead. Fortunately, in the compiler described here we apply beta reduction automatically by mixing the trait `BasePartialEvaluation` in the DSL IR, so the overhead will be removed before the program is generated.
 
 
 
