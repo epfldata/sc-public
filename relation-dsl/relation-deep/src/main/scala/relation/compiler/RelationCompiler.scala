@@ -34,9 +34,9 @@ class RelationCompiler(val DSL: RelationDSLOpsPackaged) extends Compiler[Relatio
           |import relation.shallow._""".stripMargin
         override def getTraitSignature(): Document = s"""
           |object $outputFileName {
-          |  def main(args: Array[String]): Unit = """.stripMargin
+          |  def main(args: Array[String]): Unit = Timing.time(""".stripMargin
         override def footer(): Document = s"""
-          |}
+          |, "Query Execution")}
           |""".stripMargin
       }
 
