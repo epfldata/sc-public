@@ -16,12 +16,33 @@ import relation.shallow._
 case class LoweringException(msg: String) extends Exception(msg)
 
 abstract class RelationLowering(override val IR: RelationDSLOpsPackaged, val schemaAnalysis: SchemaAnalysis) extends RecursiveRuleBasedTransformer[RelationDSLOpsPackaged](IR) {
-  
   implicit val ctx = IR // for quasiquotes
-  
   import IR.Predef._
+  
+  // Methods to provide:
+  
+  /** The type of a [[relation.shallow.Relation]] after it has been lowered to low-level code */
+  type LoweredRelation
 
-  val loweredRelations = scala.collection.mutable.Map[Rep[Relation], LoweredRelation]()
+  /** Lowering of the [[relation.shallow.Relation.scan]] operation */
+  def relationScan(scanner: Rep[RelationScanner], schema: Schema, size: Rep[Int], resultSchema: Schema): LoweredRelation
+  
+  /** Lowering of the [[relation.shallow.Relation.project]] operation */
+  def relationProject(relation: Rep[Relation], schema: Schema, resultSchema: Schema): LoweredRelation
+  
+  /** Lowering of the [[relation.shallow.Relation.select]] operation */
+  def relationSelect(relation: Rep[Relation], field: String, value: Rep[String], resultSchema: Schema): LoweredRelation
+  
+  /** Lowering of the [[relation.shallow.Relation.join]] operation */
+  def relationJoin(leftRelation: Rep[Relation], rightRelation: Rep[Relation], leftKey: String, rightKey: String, resultSchema: Schema): LoweredRelation
+  
+  /** Lowering of the [[relation.shallow.Relation.print]] operation */
+  def relationPrint(relation: Rep[Relation]): Unit
+
+
+  // Provided methods:
+  
+  private val loweredRelations = scala.collection.mutable.Map[Rep[Relation], LoweredRelation]()
 
   def getRelationSchema(relation: Rep[Relation]): Schema = schemaAnalysis.symbolSchema get relation match {
     case Some(s) => s
@@ -30,14 +51,7 @@ abstract class RelationLowering(override val IR: RelationDSLOpsPackaged, val sch
 
   def getRelationLowered(relation: Rep[Relation]): LoweredRelation = loweredRelations(relation)
 
-  type LoweredRelation
-
-  def relationScan(scanner: Rep[RelationScanner], schema: Schema, size: Rep[Int], resultSchema: Schema): LoweredRelation
-  def relationProject(relation: Rep[Relation], schema: Schema, resultSchema: Schema): LoweredRelation
-  def relationSelect(relation: Rep[Relation], field: String, value: Rep[String], resultSchema: Schema): LoweredRelation
-  def relationJoin(leftRelation: Rep[Relation], rightRelation: Rep[Relation], leftKey: String, rightKey: String, resultSchema: Schema): LoweredRelation
-  def relationPrint(relation: Rep[Relation]): Unit
-
+  
   rewrite += symRule {
     case rel @ dsl"Relation.scan(${Constant(fileName)}, $schema1, ${Constant(delimiter)})" => 
       val relation = rel.asInstanceOf[Rep[Relation]]

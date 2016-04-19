@@ -109,7 +109,7 @@ class RecordsLowering(override val IR: RelationDSLOpsPackaged, override val sche
     val getRecordString = (index: Rep[Int]) => {
       val e = dsl"$arr($index)"
       // Build a string concatenation of the record's fields, separated by "|"
-      (schema.columns zip "" #:: (Stream continually "|") foldLeft dsl"${""}") {
+      (schema.columns zip "" #:: (Stream continually "|") foldLeft dsl""" "" """) {
         case (acc, (field, sep)) =>
           val fieldValue = dsl"__struct_field[String]($e, $field)"
           dsl"$acc + $sep + $fieldValue" }
