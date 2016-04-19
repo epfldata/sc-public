@@ -25,7 +25,7 @@ println(extr) // prints 42
 
 ## Effectful Reification
 
-Following LMS~\cite{lms} and other systems before it, we use effectful ANF node reification,
+Following LMS <a name="LMS">[2]</a> and other systems before it, we use effectful ANF node reification,
 which means that any non-trivial subexpression is assigned to an intermediate local variable.
 In particular, the reification of effectful DSL expressions like `dsl"x.print"` will add a corresponding node in the generated program,
 even if the result of the `dsl` expression is not stored or returned.
