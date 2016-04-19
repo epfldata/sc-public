@@ -11,8 +11,7 @@ import PardisTypeImplicits._
 import pardis.ir._
 
 import relation.deep.RelationDSLOpsPackaged
-import relation.shallow._  
-import ArrayExtra.__for
+import relation.shallow._ 
 
 abstract class RelationLowering(override val IR: RelationDSLOpsPackaged, val schemaAnalysis: SchemaAnalysis) extends RecursiveRuleBasedTransformer[RelationDSLOpsPackaged](IR) {
   
