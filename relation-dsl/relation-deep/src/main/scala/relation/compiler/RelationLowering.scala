@@ -11,8 +11,7 @@ import PardisTypeImplicits._
 import pardis.ir._
 
 import relation.deep.RelationDSLOpsPackaged
-import relation.shallow._  
-import ArrayExtra.__for
+import relation.shallow._ 
 
 abstract class RelationLowering(override val IR: RelationDSLOpsPackaged, val schemaAnalysis: SchemaAnalysis) extends RecursiveRuleBasedTransformer[RelationDSLOpsPackaged](IR) {
   
@@ -66,6 +65,15 @@ abstract class RelationLowering(override val IR: RelationDSLOpsPackaged, val sch
       val res = relationSelect(rel1, name, value, getRelationSchema(relation))
 
       loweredRelations += relation -> res
+
+      unit()
+    }
+  }
+
+  rewrite += symRule {
+    case rel @ dsl"($rel1: Relation).select($f)" => {
+      
+      throw new Exception(s"The only supported function for selection is `x => x.getField(schema, name) == value`!")
 
       unit()
     }

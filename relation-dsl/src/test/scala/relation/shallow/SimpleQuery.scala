@@ -11,10 +11,10 @@ class SimpleQuery extends FlatSpec {
 
   "Scanning R" should "work" in {
     RScan.toString should be {
-"""number, digit
-one, 1
-two, 2
-three, 3
+"""number|digit
+one|1
+two|2
+three|3
 """
     }
   }
@@ -23,9 +23,9 @@ three, 3
 
   "Selecting R" should "work" in {
     RSelect.toString should be {
-"""number, digit
-one, 1
-three, 3
+"""number|digit
+one|1
+three|3
 """
     }
   }
@@ -49,10 +49,10 @@ three
 
   "Joining R and S" should "work" in {
   	RScan.join(SScan, "digit", "digit").toString should be {
-"""number, digit, nombre
-one, 1, un
-two, 2, deux
-three, 3, trois
+"""number|digit|nombre
+one|1|un
+two|2|deux
+three|3|trois
 """
   	}
   }

@@ -10,36 +10,31 @@ object Main extends App {
   
   def pgrmA = dsl""" 
     val schema = Schema("number", "digit")
-    val R = Relation.scan("data/R.csv", schema, "|")
-    val selR = R.select(x => x.getField(schema, "number") == "one")
-    val projR = selR.project(Schema("number"))
-    projR.print
+    val En = Relation.scan("data/En.csv", schema, "|")
+    val selEn = En.select(x => x.getField(schema, "number") == "one")
+    val projEn = selEn.project(Schema("number"))
+    projEn.print
   """
 
   def pgrmB = dsl"""
-    val Rschema = Schema("number", "digit")
-    val R = Relation.scan("data/R.csv", Rschema, "|")
-    val Sschema = Schema("digit", "nombre")
-    val S = Relation.scan("data/S.csv", Sschema, "|")
-    val RS = R.join(S, "digit", "digit")
-    RS.print
+    val EnSchema = Schema("number", "digit")
+    val En = Relation.scan("data/En.csv", EnSchema, "|")
+    val FrSchema = Schema("digit", "nombre")
+    val Fr = Relation.scan("data/Fr.csv", FrSchema, "|")
+    val EnFr = En.join(Fr, "digit", "digit")
+    EnFr.print
   """
   
   def pgrmC = dsl"""
-    val Rschema = Schema("number", "digit")
-    val R = Relation.scan("data/R.csv", Rschema, "|").select(x => x.getField(Rschema, "number") == "one")
-    val projR = R.project(Schema("number"))
-    projR.print
+    val EnSchema = Schema("number", "digit")
+    val En = Relation.scan("data/En.csv", EnSchema, "|").select(x => x.getField(EnSchema, "number") == "one")
+    val projEn = En.project(Schema("number"))
+    projEn.print
   """
   
-  def pgrm = pgrmB
+  def pgrm = pgrmA
   
-  {
-    import Context.Predef._  // needed to provide the `compile` methods with an implicit TypeRep
-    
-    // Creates the directories if do not already exist!
-    new java.io.File("generator-out/src/main/scala").mkdirs()
-    
-    new RelationCompiler(Context, "GenApp").compile(pgrm, "src/main/scala/GenApp")
-  }  
+  val compiler = new RelationCompiler(Context)
+
+  compiler.compile(pgrm) 
 }

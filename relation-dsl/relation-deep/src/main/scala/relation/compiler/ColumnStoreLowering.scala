@@ -12,7 +12,6 @@ import pardis.ir._
 
 import relation.deep.RelationDSLOpsPackaged
 import relation.shallow._  
-import ArrayExtra.__for
 
 class ColumnStoreLowering(override val IR: RelationDSLOpsPackaged, override val schemaAnalysis: SchemaAnalysis) extends RelationLowering(IR, schemaAnalysis) {
   import IR.Predef._
