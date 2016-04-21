@@ -16,7 +16,7 @@ instead of its bare size.
 
 ## Project 2
 
-#### Why does the `relationJoin` method take two `Schema` parameters?
+#### Why does the `relationProject` method take two `Schema` parameters?
 
 This is a minor oversight on our side: there should only be one `Schema` parameter to the `relationJoin` function: the **_final_** schema. Currently, we pass the **_final_** schema twice.
 The code in `RecordsLowering` that uses the first `Schema` parameter does behave correctly.
