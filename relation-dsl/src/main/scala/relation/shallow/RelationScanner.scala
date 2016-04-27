@@ -72,12 +72,17 @@ class RelationScanner(filename: String, delimiter: Char) {
   }
 
   def next(buf: Array[Byte], offset: Int) = {
-    byteRead = br.read()
     var cnt = offset
-    while (br.ready() && (byteRead != currentDelimiter) && (byteRead != '\n')) {
-      buf(cnt) = byteRead.asInstanceOf[Byte]
+    var continue = true
+    while (continue && br.ready()) {
       byteRead = br.read()
-      cnt += 1
+      if (byteRead != '\r') {
+        continue = (byteRead != currentDelimiter) && (byteRead != '\n')
+        if (continue) {
+          buf(cnt) = byteRead.asInstanceOf[Byte]
+          cnt += 1
+        }
+      }
     }
     cnt
   }
