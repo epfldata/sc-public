@@ -39,4 +39,12 @@ The resulting code is generated [by default](https://github.com/epfldata/sc-publ
 The `relation-gen` project is just another sbt project defined to run this code easily, using the command `sbt relation-gen/run`.
 This is the command that will make the query defined in the compiled program actually execute.
 
+To avoid restarting sbt each time, you can also just type `sbt` in a terminal and enter the commands `relation-deep/run` and `relation-gen/run` directly in the promt.
+
+
+#### `sbt` does not compile the project successfully
+
+Make sure you are calling sbt from the `relation-dsl` directory (and _not_ from `relation-deep`, for example).
+In order to run the compiler and the generated code, see the answer above.
+
 
