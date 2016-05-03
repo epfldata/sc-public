@@ -39,6 +39,14 @@ Error:(67, 3) type mismatch;
 ```
 The problem was that in the deep embedding DSL trait, there is no deep `Symbol` object, so the object used is the shallow one, that expects a `String` instead of a `Rep[String]`. This is a hygiene problem that will hopefully be fixed in future versions.
 
+Note: another manifestation of the problem can be errors like:
+```
+[error] not found: value __newHashMap
+[error]     dsl" new HashMap[String, Int] "
+[error]     ^
+```
+
+
 
 ### Typing Problems
 
