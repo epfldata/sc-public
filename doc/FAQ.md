@@ -11,7 +11,8 @@ For example, if you have a `Schema` object `sch`,
 you can write `val s = sch.size; dsl"$s + 1"`, or equivalently `dsl"${sch.size} + 1"`.
 However, note that you cannot write `dsl"$sch.size + 1"`,
 as that would try to make **`sch`** a constant in the generated program,
-instead of its bare size.
+instead of its bare size. (See question below.)
+
 
 #### Why does `$unquoting` not work as expected?
 
@@ -35,7 +36,18 @@ java.lang.Exception: This code generator does not know how to generate a constan
 See question above.
 
 
+
+
+
 ## Project 2–Specific
+
+
+#### Should we implement any error handling mechanism?
+
+No. Your program will not be tested on erroneous programs that, for example, refer to non-existing columns or produce schemas with name clashes.
+
+**_As a rule of thumb_**, if it does not work with the provided `RecordsLowering`, then it does not have to work with your implementation of `ColumnStoreLowering`.
+
 
 #### The queries output weird and unexpected results
 
