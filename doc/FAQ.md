@@ -25,9 +25,17 @@ There are three distinct semantics for unquoting something in a dsl block, with 
 
 With most code generation backends, one can only have constants of values that can be expressed as literals (like `Int` or `String`). Trying to unquote something like a `List[Int]` will result in an error at code-generation time (as opposed to unquoting a `Rep[List[Int]]` for example, which would be fine).
 
+For example, writing `dsl"${List(1,2)}.size"` will result in an error similar to:
+```
+java.lang.Exception: This code generator does not know how to generate a constant expression for `scala.List(Constant(1), Constant(2))` 
+```
+
+#### I get the error `This code generator does not know how to generate a constant expression for ...`
+
+See question above.
 
 
-## Project 2
+## Project 2–Specific
 
 #### The queries output weird and unexpected results
 
