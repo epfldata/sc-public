@@ -13,6 +13,18 @@ However, note that you cannot write `dsl"$sch.size + 1"`,
 as that would try to make **`sch`** a constant in the generated program,
 instead of its bare size.
 
+#### Why does `$unquoting` not work as expected?
+
+There are three distinct semantics for unquoting something in a dsl block, with syntax `dsl" ... ${x} ..."` or equivalently `dsl" ... $x ..."` if `x` is an identifier:
+
+ - if the type of `x` is `Rep[T]`, it means `x` is a program fragment that should evaluate to something of type `T`. In this case, the program fragment is placed in the generated program as a value of type `T`.
+
+ - if the type of `x` is `Rep[S] => Rep[T]`, x is converted to a `Rep[S => T]` and unquoted (using the case above).
+
+ - if none of the above apply, then `x` is placed in the generated program as a **_constant_** of type T.
+
+With most code generation backends, one can only have constants of values that can be expressed as literals (like `Int` or `String`). Trying to unquote something like a `List[Int]` will result in an error at code-generation time (as opposed to unquoting a `Rep[List[Int]]` for example, which would be fine).
+
 
 
 ## Project 2
