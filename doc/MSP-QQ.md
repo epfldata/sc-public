@@ -8,7 +8,7 @@ The syntax uses Scala's generalization of string interpolation – for example `
 The type of that expression is `Rep[Int]`, similar to MetaOCaml's `int code`.
 
 
-## Construction \& Extraction
+## Construction & Extraction
 
 SC quasiquotes, which manipulate SC IR nodes, support both their _construction_ and their _extraction_ (via pattern-matching).
 For example, 
@@ -66,7 +66,7 @@ for (x <- xs) dsl"$sum += $x.field"
 dsl"$sum * 2"
 ```
 
-In this second version, \emph{no loop} is generated, as the loop is executed during code generation (we can say it is partially-evaluated).
+In this second version, _no loop_ is generated, as the loop is executed during code generation (we can say it is partially-evaluated).
 
 
 ## Remarks
