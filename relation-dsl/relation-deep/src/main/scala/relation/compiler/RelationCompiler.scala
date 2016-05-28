@@ -18,8 +18,8 @@ class RelationCompiler(val DSL: RelationDSLOpsPackaged) extends Compiler[Relatio
   val schemaAnalysis = new SchemaAnalysis(DSL)
 
   pipeline += schemaAnalysis
-  pipeline += new RecordsLowering(DSL, schemaAnalysis)
-  //pipeline += new ColumnStoreLowering(DSL, schemaAnalysis)
+  //pipeline += new RecordsLowering(DSL, schemaAnalysis)
+  pipeline += new ColumnStoreLowering(DSL, schemaAnalysis)
 
   pipeline += DCE
   
@@ -38,6 +38,16 @@ class RelationCompiler(val DSL: RelationDSLOpsPackaged) extends Compiler[Relatio
         override def footer(): Document = s"""
           |, "Query Execution")}
           |""".stripMargin
+        
+        // temp. fix for backward compatibility in project 2
+        override def expToDocument(exp: Expression[_]): Document = try super.expToDocument(exp) catch {
+          case e: Throwable =>
+            exp match {
+              case Constant(z)  =>
+                System.err.println(s"Warning: $e")
+                z.toString
+            }
+        }
       }
 
   val outputFileName: String = "GenApp"
