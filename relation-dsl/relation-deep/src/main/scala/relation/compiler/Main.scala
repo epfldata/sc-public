@@ -95,7 +95,11 @@ object Main extends App {
     A.join(B, "middle", "middle").print
   """
   
+  //def pgrm = Skew
   def pgrm = Join
+  //def pgrm = Project
+  //def pgrm = pgrmA
+  //def pgrm = pgrmB
   
   val compiler = new RelationCompiler(Context)
 

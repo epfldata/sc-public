@@ -71,7 +71,7 @@ abstract class RelationLowering(override val IR: RelationDSLOpsPackaged, val sch
     val relation = rel.asInstanceOf[Rep[Relation]]
       val schema = getRelationSchema(relation)
 
-      val res = relationProject(rel1, schema, schema)
+      val res = relationProject(rel1, getRelationSchema(rel1), schema)
 
       loweredRelations += relation -> res
 
