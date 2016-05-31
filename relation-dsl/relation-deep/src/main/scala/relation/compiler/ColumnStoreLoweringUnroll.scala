@@ -8,11 +8,10 @@ import relation.deep.RelationDSLOpsPackaged
 import relation.shallow._
 
 /** A version of the Column Store transformer that unrolls all loops with statically-known bounds */
-class ColumnStoreLowering(override val IR: RelationDSLOpsPackaged, override val schemaAnalysis: SchemaAnalysis) extends RelationLowering(IR, schemaAnalysis) {
+class ColumnStoreLoweringUnroll(override val IR: RelationDSLOpsPackaged, override val schemaAnalysis: SchemaAnalysis) extends RelationLowering(IR, schemaAnalysis) {
   import IR.Predef._
   
   type Column = Array[String]
-  
   type LoweredRelation = (Rep[Array[Column]], Rep[Int])
   
   def relationScan(scanner: Rep[RelationScanner], schema: Schema, size: Rep[Int], resultSchema: Schema): LoweredRelation = {
@@ -37,14 +36,14 @@ class ColumnStoreLowering(override val IR: RelationDSLOpsPackaged, override val 
     val res: Rep[Array[Column]] = dsl"new Array[Column]($nColumns)"
     
     for (c <- 0 until nColumns)
-      dsl"$res($c) = $arr(${schema.columns.indexOf(resultSchema.columns(c))})"
+      dsl"$res($c) = $arr(${schema.indexOf(resultSchema.columns(c))})"
     
     res -> size
   }
   
   def relationSelect(rel: Rep[Relation], field: String, value: Rep[String], resultSchema: Schema): LoweredRelation = {
     val (arr,size) = getRelationLowered(rel)
-    val fieldIndex = resultSchema.columns.indexOf(field)
+    val fieldIndex = resultSchema.indexOf(field)
     
     val nColumns = resultSchema.size
     val res: Rep[Array[Column]] = dsl"new Array[Column]($nColumns)"
@@ -71,8 +70,8 @@ class ColumnStoreLowering(override val IR: RelationDSLOpsPackaged, override val 
     val (arr2,size2) = getRelationLowered(rightRelation)
     val sch1 = getRelationSchema(leftRelation)
     val sch2 = getRelationSchema(rightRelation)
-    val leftKeyIndex = sch1.columns.indexOf(leftKey)
-    val rightKeyIndex = sch2.columns.indexOf(rightKey)
+    val leftKeyIndex = sch1.indexOf(leftKey)
+    val rightKeyIndex = sch2.indexOf(rightKey)
     
     val res: Rep[Array[Column]] = dsl"new Array[Column](${resultSchema.size})"
     
