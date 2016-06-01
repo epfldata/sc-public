@@ -27,12 +27,79 @@ object Main extends App {
   
   def pgrmC = dsl"""
     val EnSchema = Schema("number", "digit")
-    val En = Relation.scan("data/En.csv", EnSchema, "|").select(x => x.getField(EnSchema, "number") == "one")
+    val En = Relation.scan("data/En.csv", EnSchema, "|")
+    En.select(x => x.getField(EnSchema, "number") == "one")
     val projEn = En.project(Schema("number"))
-    projEn.print
+    En.print
   """
   
-  def pgrm = pgrmA
+  def lineItemSch = dsl"""Schema(
+    "ORDERKEY",
+    "PARTKEY",
+    "SUPPKEY",
+    "LINENUMBER",
+    "QUANTITY",
+    "EXTENDEDPRICE",
+    "DISCOUNT",
+    "TAX",
+    "RETURNFLAG",
+    "LINESTATUS",
+    "SHIPDATE",
+    "COMMITDATE",
+    "RECEIPTDATE",
+    "SHIPINSTRUCT",
+    "SHIPMODE",
+    "COMMENT0"
+  )"""
+  def lineItem = dsl"""Relation.scan("data/sf0.1/lineitem.tbl", $lineItemSch, "|")"""
+  
+  def partSuppSch = dsl"""Schema(
+    "PARTKEY",
+    "SUPPKEY",
+    "AVAILQTY",
+    "SUPPLYCOST",
+    "COMMENT1"
+  )"""
+  def partSupp = dsl"""Relation.scan("data/sf0.1/partsupp.tbl", $partSuppSch, "|")"""
+  
+  def partSch = dsl"""Schema(
+    "PARTKEY",
+    "NAME",
+    "MFGR",
+    "BRAND",
+    "TYPE",
+    "SIZE",
+    "CONTAINER",
+    "RETAILPRICE",
+    "COMMENT2"
+  )"""
+  def part = dsl"""Relation.scan("data/sf0.1/part.tbl", $partSch, "|")"""
+  
+  def ScanNPrint = dsl"""
+    $part.print
+  """
+  def Project = dsl"""
+    $part.project(Schema("NAME","MFGR","SIZE")).print
+  """
+  def Select = dsl"""
+    $part.select(x => x.getField($partSch, "MFGR") == "Manufacturer#4").print
+  """
+  def Join = dsl"""
+    $part.select(x => x.getField($partSch, "MFGR") == "Manufacturer#4")
+      .join($partSupp.select(x => x.getField($partSuppSch, "SUPPKEY") == "42"), "PARTKEY", "PARTKEY").print
+  """
+  
+  def Skew = dsl"""
+    val A = Relation.scan("data/SkewA.csv", Schema("left", "middle"), "|")
+    val B = Relation.scan("data/SkewB.csv", Schema("middle", "right"), "|")
+    A.join(B, "middle", "middle").print
+  """
+  
+  //def pgrm = Skew
+  def pgrm = Join
+  //def pgrm = Project
+  //def pgrm = pgrmA
+  //def pgrm = pgrmB
   
   val compiler = new RelationCompiler(Context)
 

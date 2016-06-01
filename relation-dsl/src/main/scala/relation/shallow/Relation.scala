@@ -36,6 +36,7 @@ class Schema(val columns: List[String]) {
     if (i < 0) throw new NoSuchElementException
     i
   }
+  override def toString: String = s"Schema(${columns map ('"'+_+'"') mkString ","})"
 }
 object Schema {
   @pure

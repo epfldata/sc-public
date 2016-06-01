@@ -1,41 +1,135 @@
 package relation
 package compiler
 
-import scala.collection.mutable
-
 import ch.epfl.data.sc.pardis
-import pardis.optimization.RecursiveRuleBasedTransformer
-import pardis.quasi.TypeParameters._
-import pardis.types._
-import PardisTypeImplicits._
-import pardis.ir._
-
+import ch.epfl.data.sc.pardis.ir._
+import ch.epfl.data.sc.pardis.types._
 import relation.deep.RelationDSLOpsPackaged
-import relation.shallow._  
+import relation.shallow._
 
 class ColumnStoreLowering(override val IR: RelationDSLOpsPackaged, override val schemaAnalysis: SchemaAnalysis) extends RelationLowering(IR, schemaAnalysis) {
   import IR.Predef._
   
-  type LoweredRelation = Nothing // TODO
+  type Column = Array[String]
+  type LoweredRelation = (Rep[Array[Column]], Rep[Int])
   
   def relationScan(scanner: Rep[RelationScanner], schema: Schema, size: Rep[Int], resultSchema: Schema): LoweredRelation = {
-    ??? // TODO
+    val nColumns = resultSchema.size
+    
+    dsl"""
+      val arr = new Array[Column]($nColumns)
+      for (c <- 0 until $nColumns)
+        arr(c) = new Array[String]($size)
+        
+      var currentSize = 0
+      while($scanner.hasNext) {
+        for (c <- Range(0, $nColumns))
+          arr(c)(currentSize) = $scanner.next_string()
+        currentSize += 1
+      }
+      
+      arr
+    """ -> size
   }
-  
-  def relationProject(relation: Rep[Relation], schema: Schema, resultSchema: Schema): LoweredRelation = {
-    ??? // TODO
+  def relationProject(rel: Rep[Relation], schema: Schema, resultSchema: Schema): LoweredRelation = {
+    val (arr,size) = getRelationLowered(rel)
+    val nColumns = resultSchema.size
+    val res: Rep[Array[Column]] = dsl"new Array[Column]($nColumns)"
+    
+    for (c <- 0 until nColumns)
+      dsl"$res($c) = $arr(${schema.indexOf(resultSchema.columns(c))})"
+    
+    res -> size
   }
-  
-  def relationSelect(relation: Rep[Relation], field: String, value: Rep[String], resultSchema: Schema): LoweredRelation = {
-    ??? // TODO
+  def relationSelect(rel: Rep[Relation], field: String, value: Rep[String], resultSchema: Schema): LoweredRelation = {
+    val (arr,size) = getRelationLowered(rel)
+    val fieldIndex = resultSchema.indexOf(field)
+    
+    val nColumns = resultSchema.size
+    val res: Rep[Array[Column]] = dsl"new Array[Column]($nColumns)"
+    
+    val newSize = newVar(dsl"0")
+    
+    dsl"""
+      for (i <- 0 until $size)
+        if ($arr($fieldIndex)(i) == $value) $newSize = $newSize + 1
+        
+      val arr = new Array[String]($nColumns)
+      for (c <- 0 until $nColumns)
+        $res(c) = new Array[String]($newSize)
+        
+      $newSize = 0
+      for (i <- 0 until $size)
+        if ($arr($fieldIndex)(i) == $value) {
+          for (c <- 0 until $nColumns)
+            $res(c)($newSize) = $arr(c)(i)
+          $newSize = $newSize + 1
+        }
+    """
+    
+    res -> dsl"$newSize"
   }
-  
   def relationJoin(leftRelation: Rep[Relation], rightRelation: Rep[Relation], leftKey: String, rightKey: String, resultSchema: Schema): LoweredRelation = {
-    ??? // TODO
+    val (arr1,size1) = getRelationLowered(leftRelation)
+    val (arr2,size2) = getRelationLowered(rightRelation)
+    val sch1 = getRelationSchema(leftRelation)
+    val sch2 = getRelationSchema(rightRelation)
+    val leftKeyIndex = sch1.indexOf(leftKey)
+    val rightKeyIndex = sch2.indexOf(rightKey)
+    
+    val res: Rep[Array[Column]] = dsl"new Array[Column](${resultSchema.size})"
+    
+    val newSize = newVar(dsl"0")
+    
+    dsl"""
+      for { i <- 0 until $size1; j <- 0 until $size2}
+        if ($arr1($leftKeyIndex)(i) == $arr2($rightKeyIndex)(j)) $newSize = $newSize + 1
+        
+      for (c <- 0 until ${resultSchema.size})
+        $res(c) = new Array[String]($newSize)
+    """
+    
+    val removedIndex = rightKeyIndex
+    
+    dsl"""
+      $newSize = 0
+      for { i <- 0 until $size1; j <- 0 until $size2 }
+      if ($arr1($leftKeyIndex)(i) == $arr2($rightKeyIndex)(j)) {
+        
+        for (c <- 0 until ${sch1.size})
+          $res(c)($newSize) = $arr1(c)(i)
+          
+        var offset = 0
+        for (c <- 0 until ${sch2.size})
+          if (c == $removedIndex) offset = 1
+          else $res(c + ${sch1.size} - offset)($newSize) = $arr2(c)(j)
+          
+        $newSize = $newSize + 1
+        
+      }
+    """
+    
+    res -> dsl"$newSize"
   }
   
-  def relationPrint(relation: Rep[Relation]): Unit = {
-    ??? // TODO
+  def relationPrint(rel: Rep[Relation]): Unit = {
+    val (arr,size) = getRelationLowered(rel)
+    val schema = getRelationSchema(rel)
+    
+    dsl"""
+      for { i <- 0 until $size } {
+        val str = ${ index: Rep[Int] =>
+          schema.columns.indices map {
+            case 0 => dsl"$arr(0)($index)"
+            case c => dsl""" "|" + $arr($c)($index) """
+          } reduceOption ((a,b) => dsl"$a + $b") getOrElse dsl"${""}"
+        }(i)
+        println(str)
+      }
+    """
+    
   }
-  
+
 }
+
+

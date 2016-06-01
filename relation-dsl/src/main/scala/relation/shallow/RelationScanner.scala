@@ -88,7 +88,7 @@ class RelationScanner(filename: String, delimiter: Char) {
   }
 
   def next_string(): String = {
-    val buf = new Array[Byte](100)
+    val buf = new Array[Byte](200)
     val cnt = next(buf)
     new String(buf.slice(0, cnt).map(_.toChar))
   }
