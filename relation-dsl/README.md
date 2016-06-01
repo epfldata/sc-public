@@ -230,18 +230,18 @@ The first step is to match schemas that are actually static. For this, we write 
 object StaticSchema {
   def unapply(schema: Rep[Schema]): Option[Schema] = schema match {
     case dsl"Schema($xs*)" =>
-      val names = xs map { case Constant(x) => x case _ => return None }
+      val names = xs map { case Constant(x) => x  case _ => return None }
       Some(new Schema(names.toList))
     case _ => None
   }
 }
 ```
 
-It takes as input a `Rep[Schema]` and returns a `Schema` (notice: not a `Rep[Schema]`) if successful; otherwise `None.`
-For it to the extractor to be successful, every part of the schema has to be a constant.
+It takes as input a `Rep[Schema]` and returns a `Schema` if successful (notice: not a `Rep[Schema]`).
+For it to the extractor to be successful, every part of the schema has to be a constant (i.e., known at compile-time).
 
 Having static `Schema`s is useful because we can now associate them with tailored record types that more efficiently store and access row data.
-Creating a record type is done through the `__new[Rec](fields)` function, and can be used with a special syntax inside of quasiquotes.
+Creating a record type is done with the `__new[Rec](fields)` function, and can be used with a special syntax inside of quasiquotes.
 In the same transformation, we also _lower_ the representation of relations to simple arrays (see the [list tutorial](../list-dsl) for more info on lowerings).
 
 For implementing joins, we will also need to keep a static (compile-time) mapping of schema objects to their corresponding schema:
@@ -290,7 +290,75 @@ rewrite += symRule {
 }
 ```
 
-The simplified solution above does apply `opyRecord` in the object language (as opposed to applying it in the meta language as in the initial code), so it looks like it would add some runtime overhead. Fortunately, in the compiler described here we apply beta reduction automatically by mixing the trait `BasePartialEvaluation` in the DSL IR, so the overhead will be removed before the program is generated.
+The simplified solution above does apply `copyRecord` in the object language (as opposed to applying it in the meta language as in the initial code), so it looks like it would add some runtime overhead. Fortunately, in the compiler described here we apply beta reduction automatically by mixing the trait `BasePartialEvaluation` in the DSL IR, so the overhead will be removed before the program is generated.
+
+
+
+
+### Record Store to Column Store
+
+The code above stores each row of the database in a Scala case class (a "record" allocated on the heap).
+Alternatively, it is also possible to use the column store layout, whereby we store each column of the database in a disctinct array.
+
+In order to do that, we will associate to each original relation an array of the columns as well as and the number of tuples it contains.
+
+```scala
+type Column = Array[String]
+type LoweredRelation = (Rep[Array[Column]], Rep[Int])
+```
+
+As a simple example, consider again the implementation of projection.
+A nice advantage of column store is that it allows us to reuse the columns of the relation we are projecting from.
+The code should look like the following:
+```
+def relationProject(rel: Rep[Relation], schema: Schema, resultSchema: Schema): LoweredRelation = {
+  val (arr,size) = getRelationLowered(rel)
+  val nColumns = resultSchema.size
+  val res: Rep[Array[Column]] = dsl"new Array[Column]($nColumns)"
+  
+  for (c <- 0 until nColumns)
+    dsl"$res($c) = $arr(${schema.columns.indexOf(resultSchema.columns(c))})"
+  
+  res -> size
+}
+```
+
+Notice that we are iterating on the columns _at compile time_ (the `for` loop is outside of a `dsl` block), which will insert the statements corresponding to each iteration into the generated program.
+
+Now, sometimes we need to iterate over the rows in the generated program and, for each row, iterate over the columns. We can still do the latter statically, by using the same technique as shown in the previous pragraph.
+In the context of the implementation of `print`, it would look like:
+
+```scala
+def relationPrint(rel: Rep[Relation]): Unit = {
+  val (arr,size) = getRelationLowered(rel)
+  val schema = getRelationSchema(rel)
+  dsl"""
+    for { i <- 0 until $size } {
+      val str = ${ index: Rep[Int] =>
+        schema.columns.indices map {
+          case 0 => dsl"$arr(0)($index)"
+          case c => dsl""" "|" + $arr($c)($index) """
+        } reduceOption ((a,b) => dsl"$a + $b") getOrElse dsl"${""}"
+      }(i)
+      println(str)
+    }
+  """
+}
+```
+
+We iterate over the index of each column (`schema.columns.indices`),
+generate a the statements to make one string per element (`map { case c => ... $arr($c)($index) ... }`)
+and to add them together (`reduceOption ((a,b) => dsl"$a + $b")`),
+and if the result is empty, we simply output an empty string (`getOrElse dsl"${""}"`).
+
+Finally,
+we could also go one step further and store, for each relation, an array of the representations of each column, instead of the representation of an array of array.
+In other words, we partially evaluate the outer array, which size is known at compile-time:
+```
+type LoweredRelation = (Array[Rep[Column]], Rep[Int])
+```
+
+The complete specializing implementations of record store and the different styles of column store, sharing a unique interface, are availbale [here](relation-deep/src/main/scala/relation/compiler).
 
 
 
@@ -298,6 +366,7 @@ The simplified solution above does apply `opyRecord` in the object language (as 
 
 We have defined a simple Scala DSL for relational algebra, and implemented optimizations to specialize relations that have static schemas
 and to use low-level array constructs, thereby getting rid of execution overhead.
+Moreover, we saw how to generate different implementations depending on which data layout we chose – something that could be determined automatically with a prior analysis of the program.
 
 
 
