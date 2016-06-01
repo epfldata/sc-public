@@ -310,7 +310,7 @@ type LoweredRelation = (Rep[Array[Column]], Rep[Int])
 As a simple example, consider again the implementation of projection.
 A nice advantage of column store is that it allows us to reuse the columns of the relation we are projecting from.
 The code should look like the following:
-```
+```scala
 def relationProject(rel: Rep[Relation], schema: Schema, resultSchema: Schema): LoweredRelation = {
   val (arr,size) = getRelationLowered(rel)
   val nColumns = resultSchema.size
@@ -354,7 +354,7 @@ and if the result is empty, we simply output an empty string (`getOrElse dsl"${"
 Finally,
 we could also go one step further and store, for each relation, an array of the representations of each column, instead of the representation of an array of array.
 In other words, we partially evaluate the outer array, which size is known at compile-time:
-```
+```scala
 type LoweredRelation = (Array[Rep[Column]], Rep[Int])
 ```
 
