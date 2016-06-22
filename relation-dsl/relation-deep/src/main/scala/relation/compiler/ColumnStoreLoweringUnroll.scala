@@ -7,7 +7,8 @@ import ch.epfl.data.sc.pardis.types._
 import relation.deep.RelationDSLOpsPackaged
 import relation.shallow._
 
-class ColumnStoreLowering(override val IR: RelationDSLOpsPackaged, override val schemaAnalysis: SchemaAnalysis) extends RelationLowering(IR, schemaAnalysis) {
+/** A version of the Column Store transformer that unrolls all loops with statically-known bounds */
+class ColumnStoreLoweringUnroll(override val IR: RelationDSLOpsPackaged, override val schemaAnalysis: SchemaAnalysis) extends RelationLowering(IR, schemaAnalysis) {
   import IR.Predef._
   
   type Column = Array[String]
@@ -16,21 +17,19 @@ class ColumnStoreLowering(override val IR: RelationDSLOpsPackaged, override val 
   def relationScan(scanner: Rep[RelationScanner], schema: Schema, size: Rep[Int], resultSchema: Schema): LoweredRelation = {
     val nColumns = resultSchema.size
     
+    val arr = dsl"new Array[Column]($nColumns)"
+    for (c <- 0 until nColumns) dsl"$arr($c) = new Array[String]($size)"
+    
     dsl"""
-      val arr = new Array[Column]($nColumns)
-      for (c <- 0 until $nColumns)
-        arr(c) = new Array[String]($size)
-        
-      var currentSize = 0
-      while($scanner.hasNext) {
-        for (c <- Range(0, $nColumns))
-          arr(c)(currentSize) = $scanner.next_string()
-        currentSize += 1
-      }
-      
-      arr
-    """ -> size
+      for (i <- 0 until $size) ${ i: Rep[Int] =>
+        for (c <- 0 until nColumns) dsl"$arr($c)($i) = $scanner.next_string()"
+        dsl"()"
+      }(i)
+    """
+    
+    arr -> size
   }
+  
   def relationProject(rel: Rep[Relation], schema: Schema, resultSchema: Schema): LoweredRelation = {
     val (arr,size) = getRelationLowered(rel)
     val nColumns = resultSchema.size
@@ -41,6 +40,7 @@ class ColumnStoreLowering(override val IR: RelationDSLOpsPackaged, override val 
     
     res -> size
   }
+  
   def relationSelect(rel: Rep[Relation], field: String, value: Rep[String], resultSchema: Schema): LoweredRelation = {
     val (arr,size) = getRelationLowered(rel)
     val fieldIndex = resultSchema.indexOf(field)
@@ -50,25 +50,21 @@ class ColumnStoreLowering(override val IR: RelationDSLOpsPackaged, override val 
     
     val newSize = newVar(dsl"0")
     
+    dsl" for (i <- 0 until $size) if ($arr($fieldIndex)(i) == $value) $newSize = $newSize + 1 "
+    for (c <- 0 until nColumns) dsl"$res($c) = new Array[String]($newSize)"
+    
     dsl"""
-      for (i <- 0 until $size)
-        if ($arr($fieldIndex)(i) == $value) $newSize = $newSize + 1
-        
-      val arr = new Array[String]($nColumns)
-      for (c <- 0 until $nColumns)
-        $res(c) = new Array[String]($newSize)
-        
       $newSize = 0
       for (i <- 0 until $size)
         if ($arr($fieldIndex)(i) == $value) {
-          for (c <- 0 until $nColumns)
-            $res(c)($newSize) = $arr(c)(i)
+          ${ i: Rep[Int] => for (c <- 0 until nColumns) dsl"$res($c)($newSize) = $arr($c)($i)"; dsl"()" }(i)
           $newSize = $newSize + 1
         }
     """
     
     res -> dsl"$newSize"
   }
+  
   def relationJoin(leftRelation: Rep[Relation], rightRelation: Rep[Relation], leftKey: String, rightKey: String, resultSchema: Schema): LoweredRelation = {
     val (arr1,size1) = getRelationLowered(leftRelation)
     val (arr2,size2) = getRelationLowered(rightRelation)
@@ -81,31 +77,25 @@ class ColumnStoreLowering(override val IR: RelationDSLOpsPackaged, override val 
     
     val newSize = newVar(dsl"0")
     
-    dsl"""
-      for { i <- 0 until $size1; j <- 0 until $size2}
-        if ($arr1($leftKeyIndex)(i) == $arr2($rightKeyIndex)(j)) $newSize = $newSize + 1
-        
-      for (c <- 0 until ${resultSchema.size})
-        $res(c) = new Array[String]($newSize)
-    """
+    dsl"""for { i <- 0 until $size1; j <- 0 until $size2}
+            if ($arr1($leftKeyIndex)(i) == $arr2($rightKeyIndex)(j)) $newSize = $newSize + 1 """
+    for (c <- 0 until resultSchema.size) dsl"$res($c) = new Array[String]($newSize)"
     
     val removedIndex = rightKeyIndex
     
     dsl"""
       $newSize = 0
       for { i <- 0 until $size1; j <- 0 until $size2 }
-      if ($arr1($leftKeyIndex)(i) == $arr2($rightKeyIndex)(j)) {
-        
-        for (c <- 0 until ${sch1.size})
-          $res(c)($newSize) = $arr1(c)(i)
-          
-        var offset = 0
-        for (c <- 0 until ${sch2.size})
-          if (c == $removedIndex) offset = 1
-          else $res(c + ${sch1.size} - offset)($newSize) = $arr2(c)(j)
-          
+      if ($arr1($leftKeyIndex)(i) == $arr2($rightKeyIndex)(j)) {  
+        ${ (i: Rep[Int], j: Rep[Int]) => 
+          for (c <- 0 until sch1.size) dsl"$res($c)($newSize) = $arr1($c)($i)"
+          var offset = 0
+          for (c <- 0 until sch2.size)
+            if (c == removedIndex) offset = 1
+            else dsl"$res($c + ${sch1.size - offset})($newSize) = $arr2($c)($j)"
+          dsl"()"
+        }(i,j)
         $newSize = $newSize + 1
-        
       }
     """
     
