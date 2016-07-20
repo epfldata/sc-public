@@ -33,7 +33,7 @@ object List {
 }
 ```
 
-See the full file [here](src/main/scala/list/shallow/List.scala).
+See the full file [here](step1/src/main/scala/list/shallow/List.scala).
 
 The EDSL can already be used like a normal Scala library.
 It can be tested by typing `sbt console`, and importing `list.shallow._`, as in the following sbt session example:
@@ -130,7 +130,7 @@ generatorSettings ++ Seq(
 
 One should not forget the `generatePlugins` line to be able to use quasiquotation, and to specify a correct `outputFolder` (the folder for generated files), `inputPackage` and `outputPackage` (package of the shallow library and package for the deep embedding to be generated).
 
-See [here](project/Build.scala) for the full build file of our example.
+See [here](step2/project/Build.scala) for the full build file of our example.
 
 Now that SBT is set up, we can proceed to the actual code generation, by going to the main project root directory, and typing `sbt embed`.
 
@@ -183,7 +183,7 @@ object MyCompiler extends Compiler[ListDSLOps] {
 MyCompiler.compile(pgrm, "src/main/scala/GeneratedApp")
 ```
 
-(See file [MyCompiler.scala](list-deep/src/main/scala/list/compiler/MyCompiler.scala) for an example definition of `codeGenerator`.)
+(See file [MyCompiler.scala](step2/list-deep/src/main/scala/list/compiler/MyCompiler.scala) for an example definition of `codeGenerator`.)
 
 
 
