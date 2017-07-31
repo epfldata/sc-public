@@ -11,6 +11,27 @@ object Examples extends App {
     val projEn = selEn.project(Schema("digit", "number"))
     projEn.print
   """
+
+  def pgrmB = ir"""
+    val EnSchema = Schema("number", "digit")
+    val En = Relation.scan("data/En.csv", EnSchema, "|")
+    val FrSchema = Schema("digit", "nombre")
+    val Fr = Relation.scan("data/Fr.csv", FrSchema, "|")
+    val EnFr = En.join(Fr, "digit", "digit")
+    EnFr.print
+  """
+
+  def pgrmC = ir"""
+    val EnSchema = Schema("number", "digit")
+    val En = Relation.scan("data/En.csv", EnSchema, "|")
+    val FrSchema = Schema("digitf", "nombre")
+    val Fr = Relation.scan("data/Fr.csv", FrSchema, "|")
+    val EnFr = En.join(Fr, "digit", "digitf")
+    EnFr.project(Schema("digit", "number", "nombre")).print
+  """
+
+
+  def pgrm = pgrmC
   
-  println(pgrmA.transformWith(RelationLowering).transformWith(SchemaSpecialization))
+  println(pgrm.transformWith(RelationLowering).transformWith(SchemaSpecialization))
 }

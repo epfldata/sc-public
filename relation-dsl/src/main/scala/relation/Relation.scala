@@ -5,10 +5,18 @@ import squid.quasi.{dbg_embed, embed, phase}
 
 /** A row contained in a relation */
 @embed
-class Row(val values: List[String]) {
+class Row(private val values: List[String]) {
   /** Access a field of this row, given the relation schema and the field name */
   def getField(schema: Schema, fieldName: String): String =
     schema.columns.zip(values).find(x => x._1 == fieldName).map(_._2).get
+
+  @transparent
+  def getValue(index: Int): String =
+    values(index)
+
+  @transparent
+  def append(r2: Row): Row =
+    new Row(values ++ r2.values)
 
   override def toString: String = values.mkString("|")
 }
@@ -49,19 +57,18 @@ class Relation(val schema: Schema, val underlying: List[Row]) {
   def project(newSchema: Schema): Relation = {
     new Relation(newSchema, underlying.map(r => {
       val indices = schema.indicesOf(newSchema.columns)
-      val values = indices.map(idx => r.values(idx))
+      val values = indices.map(idx => r.getValue(idx))
       new Row(values)
       })
     )
   }
-  /** Equi-join operation: combines each rows from two tables when their keys match
-    * the result relation does not have the join-key column from the right relation */
+  /** Equi-join operation: combines each rows from two tables when their keys match. */
   @phase('RelRemove)
   def join(o: Relation, leftKey: String, rightKey: String): Relation = {
-    val newSchema = new Schema(schema.columns ++ o.schema.columns.filter(_ != rightKey))
+    val newSchema = new Schema(schema.columns ++ o.schema.columns)
     val joinedRows = for(r1 <- underlying; 
         r2 <- o.underlying if r1.getField(schema, leftKey) == r2.getField(o.schema, rightKey)) yield
-      new Row(r1.values ++ r2.values.zip(o.schema.columns).filter(_._2 != rightKey).map(_._1))
+      r1.append(r2)
     new Relation(newSchema, joinedRows)
   }
   
