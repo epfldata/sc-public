@@ -3,6 +3,8 @@ package relation
 import squid.lib.transparent
 import squid.quasi.{dbg_embed, embed, phase}
 
+import scala.collection.mutable
+
 /** A row contained in a relation */
 @embed
 class Row(private val values: List[String]) {
@@ -66,9 +68,14 @@ class Relation(val schema: Schema, val underlying: List[Row]) {
   @phase('RelRemove)
   def join(o: Relation, leftKey: String, rightKey: String): Relation = {
     val newSchema = new Schema(schema.columns ++ o.schema.columns)
-    val joinedRows = for(r1 <- underlying; 
-        r2 <- o.underlying if r1.getField(schema, leftKey) == r2.getField(o.schema, rightKey)) yield
+    val hashTable = new mutable.HashMap[String, Row]
+    for(r1 <- underlying) {
+      hashTable += r1.getField(schema, leftKey) -> r1
+    }
+    val joinedRows = for(r2 <- o.underlying if hashTable.contains(r2.getField(o.schema, rightKey))) yield {
+      val r1 = hashTable(r2.getField(o.schema, rightKey))
       r1.append(r2)
+    }
     new Relation(newSchema, joinedRows)
   }
   
