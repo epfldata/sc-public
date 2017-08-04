@@ -9,6 +9,7 @@ import squid.lang.ScalaCore
 
 object RelationDSL extends SimpleANF with ClassEmbedder with SimpleEffects with StandardEffects with OnlineOptimizer with CurryEncoding.ApplicationNormalizer {
   embed(Relation)
+  embed(Stream)
 }
 
 

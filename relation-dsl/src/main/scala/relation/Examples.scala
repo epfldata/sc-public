@@ -3,6 +3,13 @@ package relation
 object Examples extends App {
   
   import RelationDSL.Predef._
+
+  def pgrm0 = ir"""
+    val schema = Schema("number", "digit")
+    val En = Relation.scan("data/En.csv", schema, "|")
+    val selEn = En.select(x => x.getField(schema, "number") == "one")
+    selEn.print
+  """
   
   def pgrmA = ir"""
     val schema = Schema("number", "digit")
@@ -33,5 +40,9 @@ object Examples extends App {
 
   def pgrm = pgrmC
   
-  println(pgrm.transformWith(RelationLowering).transformWith(SchemaSpecialization))
+  println(pgrm
+    transformWith RelationLowering
+    transformWith SchemaSpecialization
+    transformWith ListFusion
+  )
 }

@@ -1,6 +1,7 @@
 package relation
 
 import squid.ir._
+import squid.quasi.{embed, phase}
 
 object RelationInliner extends RelationDSL.Lowering('RelRemove)
 
@@ -66,3 +67,68 @@ object SchemaSpecialization extends RelationDSL.SelfTransformer with FixPointRul
       ir"List($newElems*)"
   }
 }
+
+object ListFusion extends RelationDSL.TransformerWrapper(ListFusionTransformers.ListToStream, ListFusionTransformers.StreamFusion, ListFusionTransformers.StreamLowering) with BottomUpTransformer
+
+@embed
+class Stream[T](val consume: (T => Unit) => Unit) {
+  @phase('StreamInline)
+  def map[S](f: T => S): Stream[S] = new Stream(k => foreach(e => k(f(e))))
+  @phase('StreamInline)
+  def filter(p: T => Boolean): Stream[T] = new Stream(k => foreach(e => if(p(e)) k(e)))
+  @phase('StreamInline)
+  def foreach(f: T => Unit): Unit = consume(f)
+  def toList: List[T] = ???
+}
+object Stream {
+  @phase('StreamInline)
+  def fromList[T](l: List[T]): Stream[T] = new Stream(k => l.foreach(k))
+}
+
+object ListFusionTransformers {
+  object ListToStream extends RelationDSL.SelfTransformer with FixPointRuleBasedTransformer with TopDownTransformer with FixPointTransformer {
+    import RelationDSL.Predef._
+
+    rewrite {
+      case ir"($l: List[$t]).map($f: t => $t2)" =>
+        ir"Stream.fromList($l).map($f).toList"
+    }
+
+    rewrite {
+      case ir"($l: List[$t]).filter($p)" =>
+        ir"Stream.fromList($l).filter($p).toList"
+    }
+
+    rewrite {
+      case ir"($l: List[$t]).foreach($f: t => Unit)" =>
+        ir"Stream.fromList($l).foreach($f)"
+    }
+  }
+
+  object StreamFusion extends RelationDSL.SelfTransformer with FixPointRuleBasedTransformer with TopDownTransformer with FixPointTransformer {
+    import RelationDSL.Predef._
+
+    rewrite {
+      case ir"Stream.fromList(($s: Stream[$t]).toList)" =>
+        ir"$s"
+    }
+  }
+
+  object StreamInliner extends RelationDSL.Lowering('StreamInline)
+
+
+  object StreamCtorInliner extends RelationDSL.SelfTransformer with SimpleRuleBasedTransformer {
+    import RelationDSL.Predef._
+    rewrite {
+      case ir"val $s = new Stream($consume: ($t => Unit) => Unit); $body: $t2" =>
+        val newBody = body rewrite {
+          case ir"$$s.consume" => consume
+        }
+        newBody subs 's -> Abort()
+
+    }
+  }
+
+  object StreamLowering extends RelationDSL.TransformerWrapper(StreamInliner, StreamCtorInliner) with BottomUpTransformer with FixPointTransformer
+}
+
