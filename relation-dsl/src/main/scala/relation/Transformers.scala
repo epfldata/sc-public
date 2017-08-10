@@ -1,6 +1,7 @@
 package relation
 
 import squid.ir._
+import squid.lib.{Var, transparencyPropagating, transparent}
 import squid.quasi.{embed, phase}
 
 object RelationInliner extends RelationDSL.Lowering('RelRemove)
@@ -60,6 +61,10 @@ object SchemaSpecialization extends RelationDSL.SelfTransformer with FixPointRul
     case ir"List[$t]($elems*).map($f: t => $t2)" =>
       val newElems = elems.map(x => ir"$f($x)")
       ir"List($newElems*)"
+  }
+  rewrite {
+    case ir"List[$t]($elems*).size" =>
+      Const(elems.size)
   }
   rewrite {
     case ir"List[$t]($elems1*) ++ List[t]($elems2*)" =>
@@ -124,11 +129,135 @@ object ListFusionTransformers {
         val newBody = body rewrite {
           case ir"$$s.consume" => consume
         }
-        newBody subs 's -> Abort()
+        newBody subs 's -> {throw RewriteAbort()}
 
     }
   }
 
   object StreamLowering extends RelationDSL.TransformerWrapper(StreamInliner, StreamCtorInliner) with BottomUpTransformer with FixPointTransformer
+}
+
+class TupledRow(val tup: Product) {
+  @transparencyPropagating
+  def toRow: Row = ???
+  @transparencyPropagating
+  def getElem(idx: Int): String = ???
+}
+
+object TupledRow {
+  @transparencyPropagating
+  def fromRow(r: Row): TupledRow = ???
+  @transparencyPropagating
+  def apply(p: Product): TupledRow = ???
+}
+
+object RowLayout extends RelationDSL.TransformerWrapper(RowLayoutTransformers.RowToTupledRow, RowLayoutTransformers.TupledRowFusion, RowLayoutTransformers.TupledRowLowering) with BottomUpTransformer
+
+object RowLayoutTransformers {
+  import RelationDSL.Predef._
+
+  object TupleProcessing {
+    def getTupleType(arity: Int): IRType[_] = {
+      arity match {
+        case 2 => irTypeOf[(String, String)]
+        case 3 => irTypeOf[(String, String, String)]
+        case 4 => irTypeOf[(String, String, String, String)]
+        case _ => throw new Exception(s"Does not support getting the type a tuple of $arity elements.")
+      }
+    }
+
+    def constructTuple2[C](f: Int => IR[String, C], arity: Int): IR[_, C] = {
+      arity match {
+        case 2 => ir"(${f(0)}, ${f(1)})"
+        case 3 => ir"(${f(0)}, ${f(1)}, ${f(2)})"
+        case 4 => ir"(${f(0)}, ${f(1)}, ${f(2)}, ${f(3)})"
+        case _ => throw new Exception(s"Does not support the construction of a tuple of $arity elements.")
+      }
+    }
+
+    def constructTuple[C <: AnyRef](elems: IR[List[String], C], arity: Int): IR[_, C] = {
+      constructTuple2[C]((idx: Int) => ir"$elems(${Const(idx)})", arity)
+    }
+
+    def getTupleArity(tup:IR[Any,_]): Int = {
+      tup match {
+        case ir"$tup: ($ta,$tb)" => 2
+        case ir"$tup: ($ta,$tb,$tc)" => 3
+        case ir"$tup: ($ta,$tb,$tc,$td)" => 4
+        case _ => throw new Exception(s"Does not support getting the arity of the tuple `$tup`.")
+      }
+    }
+
+    def projectTuple[C](tup:IR[Product,C], idx:Int) = {
+      val res = tup match {
+        case ir"$tup: ($ta,$tb)" => idx match {
+          case 0 => ir"$tup._1"
+          case 1 => ir"$tup._2"
+        }
+        case ir"$tup: ($ta,$tb,$tc)" => idx match {
+          case 0 => ir"$tup._1"
+          case 1 => ir"$tup._2"
+          case 2 => ir"$tup._3"
+        }
+        case ir"$tup: ($ta,$tb,$tc, $td)" => idx match {
+          case 0 => ir"$tup._1"
+          case 1 => ir"$tup._2"
+          case 2 => ir"$tup._3"
+          case 3 => ir"$tup._4"
+        }
+        case ir"$tup: Product" => throw new Exception(s"Does not support the projection of the ${idx}th element of the tuple `$tup`.")
+      }
+      ir"$res.asInstanceOf[String]"
+    }
+  }
+
+  import TupleProcessing._
+
+  object RowToTupledRow extends RelationDSL.SelfTransformer with SimpleRuleBasedTransformer with BottomUpTransformer with FixPointTransformer {
+
+
+    def listRewrite[T:IRType,C](list: IR[Var[List[Row]],C{val list: Var[List[Row]]}], body: IR[T,C{val list: Var[List[Row]]}]): IR[T,C] = {
+      var size: Int = -1
+      body analyse {
+        case ir"$$list := ($$list.!).::(Row($_, ${Const(s)}))" =>
+          size = s
+      }
+      getTupleType(size) match { case tupType: IRType[tp] =>
+        val newList = ir"newList? : Var[List[$tupType]]"
+        val body0 = body rewrite {
+          case ir"$$list := ($$list.!).::(Row($elems, ${Const(s)}))" =>
+            ir"$newList := ($newList.!).::(${constructTuple(elems, s)}.asInstanceOf[$tupType])"
+          case ir"$$list.!.foreach[$t](x => $fbody)" =>  ir"($newList.!) foreach {e => val x = TupledRow(e.asInstanceOf[Product]).toRow; $fbody}"
+          //      case ir"$$list.!.foreach[$t]($f)" =>  ir"($newList.!) foreach $f"
+        }
+        val body1 = body0 subs 'list -> {throw RewriteAbort()}
+        ir"val newList: Var[List[$tupType]] = Var(Nil); $body1"
+      }}
+
+    rewrite {
+      case ir"($r: Row).getValue($idx)" =>
+        ir"TupledRow.fromRow($r).getElem($idx)"
+      case ir"val $list: Var[List[Row]] = Var(Nil); $body: $t2" =>
+        listRewrite(list, body)
+    }
+  }
+
+  object TupledRowFusion extends RelationDSL.SelfTransformer with SimpleRuleBasedTransformer with BottomUpTransformer with FixPointTransformer {
+    rewrite {
+      case ir"TupledRow.fromRow(($t: TupledRow).toRow)" =>
+        t
+    }
+  }
+
+  object TupledRowLowering extends RelationDSL.SelfTransformer with SimpleRuleBasedTransformer with BottomUpTransformer with FixPointTransformer {
+    rewrite {
+      case ir"TupledRow($e).getElem(${Const(idx)})" =>
+        projectTuple(e, idx)
+      case ir"TupledRow($e).toRow" =>
+        val arity = getTupleArity(e)
+        val elems = (0 until arity).map(i => projectTuple(e, i))
+        ir"Row(List($elems*), ${Const(arity)})"
+    }
+  }
 }
 

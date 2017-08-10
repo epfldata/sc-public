@@ -1,5 +1,6 @@
 package relation
 
+import squid.anf.transfo.IdiomsNormalizer
 import squid.ir._
 import squid.lang.ScalaCore
 //
@@ -7,7 +8,8 @@ import squid.lang.ScalaCore
 //  embed(Relation)
 //}
 
-object RelationDSL extends SimpleANF with ClassEmbedder with SimpleEffects with StandardEffects with OnlineOptimizer with CurryEncoding.ApplicationNormalizer {
+object RelationDSL extends SimpleANF with ClassEmbedder with SimpleEffects with StandardEffects with OnlineOptimizer
+  with CurryEncoding.ApplicationNormalizer with IdiomsNormalizer with ScalaCore {
   embed(Relation)
   embed(Stream)
 }
