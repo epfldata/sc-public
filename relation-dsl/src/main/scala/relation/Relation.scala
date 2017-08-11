@@ -77,7 +77,8 @@ class Relation(val schema: Schema, val underlying: List[Row]) {
     val newSchema = new Schema(schema.columns ++ o.schema.columns)
     val hashTable = new mutable.HashMap[String, Row]
     for(r1 <- underlying) {
-      hashTable += r1.getField(schema, leftKey) -> r1
+      hashTable += ((r1.getField(schema, leftKey), r1))
+      ()
     }
     val joinedRows = o.underlying.filter(r2 => hashTable.contains(r2.getField(o.schema, rightKey))).map({ r2 =>
       val r1 = hashTable(r2.getField(o.schema, rightKey))

@@ -3,6 +3,7 @@ package relation
 import squid.ir._
 import squid.lib.{Var, transparencyPropagating, transparent}
 import squid.quasi.{embed, phase}
+import scala.collection.mutable.HashMap
 
 object RelationInliner extends RelationDSL.Lowering('RelRemove)
 
@@ -182,9 +183,10 @@ object RowLayoutTransformers {
     def getTupleArity(tup:IR[Any,_]): Int = {
       tup match {
         case ir"$tup: ($ta,$tb)" => 2
+        case ir"($tup: ($ta,$tb)): Product" => 2
         case ir"$tup: ($ta,$tb,$tc)" => 3
         case ir"$tup: ($ta,$tb,$tc,$td)" => 4
-        case _ => throw new Exception(s"Does not support getting the arity of the tuple `$tup`.")
+        case _ => throw new Exception(s"Does not support getting the arity of the tuple `$tup`, ${tup.typ}.")
       }
     }
 
@@ -227,18 +229,50 @@ object RowLayoutTransformers {
         val body0 = body rewrite {
           case ir"$$list := ($$list.!).::(Row($elems, ${Const(s)}))" =>
             ir"$newList := ($newList.!).::(${constructTuple(elems, s)}.asInstanceOf[$tupType])"
-          case ir"$$list.!.foreach[$t](x => $fbody)" =>  ir"($newList.!) foreach {e => val x = TupledRow(e.asInstanceOf[Product]).toRow; $fbody}"
-          //      case ir"$$list.!.foreach[$t]($f)" =>  ir"($newList.!) foreach $f"
+          case ir"val $listVar = $$list.!; $subBody: $tp2" =>
+            val subBody2 = subBody rewrite {
+              case ir"$$listVar.foreach[$t](x => $fbody)" => ir"($newList.!) foreach {e => val x = TupledRow(e.asInstanceOf[Product]).toRow; $fbody}"
+            }
+            subBody2 subs 'listVar -> {System.err.println(s"inside list var access $subBody"); throw RewriteAbort()}
+//          case ir"$$list.!.foreach[$t]($f)" =>  ir"($newList.!) foreach $f"
         }
-        val body1 = body0 subs 'list -> {throw RewriteAbort()}
+        val body1 = body0 subs 'list -> {System.err.println(s"list body $tupType::$body0"); throw RewriteAbort()}
         ir"val newList: Var[List[$tupType]] = Var(Nil); $body1"
       }}
+
+    def hashMapRewrite[T:IRType,C](hm: IR[HashMap[String, Row],C{val hm: HashMap[String, Row]}], body: IR[T,C{val hm: HashMap[String, Row]}]): IR[T,C] = {
+      var size: Int = -1
+      body analyse {
+        case ir"$$hm += (($_: String, TupledRow((($tup): scala.Product)).toRow))" =>
+          size = getTupleArity(tup)
+      }
+      if (size == -1) {
+        System.err.println(s"size inferred as -1 in $body")
+        throw RewriteAbort()
+      } else {
+//        System.out.println(s"size inferred as $size in $body")
+      }
+      getTupleType(size) match { case tupType: IRType[tp] =>
+        val newHm = ir"newHm? : HashMap[String, $tupType]"
+        val body0 = body rewrite {
+          case ir"$$hm += (($key: String, TupledRow($tup: scala.Product).toRow)); ()" =>
+            ir"$newHm += (($key, ($tup.asInstanceOf[$tupType]))); ()"
+          case ir"$$hm.contains($key)" => ir"$newHm.contains($key)"
+          case ir"$$hm.apply($key: String)" => ir"TupledRow($newHm.apply($key).asInstanceOf[Product]).toRow"
+        }
+        val body1 = body0 subs 'hm -> {throw RewriteAbort()}
+        System.out.println(s"size inferred as $size in $body1")
+        ir"val newHm: HashMap[String, $tupType] = new HashMap[String, $tupType]; $body1"
+      }}
+
 
     rewrite {
       case ir"($r: Row).getValue($idx)" =>
         ir"TupledRow.fromRow($r).getElem($idx)"
       case ir"val $list: Var[List[Row]] = Var(Nil); $body: $t2" =>
         listRewrite(list, body)
+      case ir"val $hm: HashMap[String, Row] = new HashMap[String, Row]; $body: $t2" =>
+        hashMapRewrite(hm, body)
     }
   }
 
@@ -251,7 +285,7 @@ object RowLayoutTransformers {
 
   object TupledRowLowering extends RelationDSL.SelfTransformer with SimpleRuleBasedTransformer with BottomUpTransformer with FixPointTransformer {
     rewrite {
-      case ir"TupledRow($e).getElem(${Const(idx)})" =>
+      case ir"TupledRow($e: Product).getElem(${Const(idx)})" =>
         projectTuple(e, idx)
       case ir"TupledRow($e).toRow" =>
         val arity = getTupleArity(e)

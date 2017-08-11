@@ -38,7 +38,7 @@ object Examples extends App {
   """
 
 
-  def pgrm = pgrm0
+  def pgrm = pgrmB
   
   println(pgrm
     transformWith RelationLowering
