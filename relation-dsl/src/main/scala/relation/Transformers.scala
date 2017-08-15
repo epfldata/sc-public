@@ -152,7 +152,11 @@ object TupledRow {
   def apply(p: Product): TupledRow = ???
 }
 
-object RowLayout extends RelationDSL.TransformerWrapper(RowLayoutTransformers.RowToTupledRow, RowLayoutTransformers.TupledRowFusion, RowLayoutTransformers.TupledRowLowering) with BottomUpTransformer
+object RowLayout extends RelationDSL.TransformerWrapper(
+    RowLayoutTransformers.RowToTupledRow
+    , RowLayoutTransformers.TupledRowFusion
+    , RowLayoutTransformers.TupledRowLowering
+  ) with BottomUpTransformer
 
 object RowLayoutTransformers {
   import RelationDSL.Predef._
@@ -183,7 +187,6 @@ object RowLayoutTransformers {
     def getTupleArity(tup:IR[Any,_]): Int = {
       tup match {
         case ir"$tup: ($ta,$tb)" => 2
-        case ir"($tup: ($ta,$tb)): Product" => 2
         case ir"$tup: ($ta,$tb,$tc)" => 3
         case ir"$tup: ($ta,$tb,$tc,$td)" => 4
         case _ => throw new Exception(s"Does not support getting the arity of the tuple `$tup`, ${tup.typ}.")
@@ -252,17 +255,17 @@ object RowLayoutTransformers {
       } else {
 //        System.out.println(s"size inferred as $size in $body")
       }
-      getTupleType(size) match { case tupType: IRType[tp] =>
-        val newHm = ir"newHm? : HashMap[String, $tupType]"
+      getTupleType(size) match { case tupTypeVal: IRType[tupType] =>
+        val newHm = ir"newHm? : HashMap[String, tupType]"
         val body0 = body rewrite {
           case ir"$$hm += (($key: String, TupledRow($tup: scala.Product).toRow)); ()" =>
-            ir"$newHm += (($key, ($tup.asInstanceOf[$tupType]))); ()"
+            ir"$newHm += (($key, ($tup.asInstanceOf[tupType]))); ()"
           case ir"$$hm.contains($key)" => ir"$newHm.contains($key)"
-          case ir"$$hm.apply($key: String)" => ir"TupledRow($newHm.apply($key).asInstanceOf[Product]).toRow"
+          case ir"$$hm.apply($key: String)" => ir"TupledRow(${ir"$newHm.apply($key)".asInstanceOf[IR[Product, key.Ctx]]}).toRow"
         }
         val body1 = body0 subs 'hm -> {throw RewriteAbort()}
         System.out.println(s"size inferred as $size in $body1")
-        ir"val newHm: HashMap[String, $tupType] = new HashMap[String, $tupType]; $body1"
+        ir"val newHm: HashMap[String, tupType] = new HashMap[String, tupType]; $body1"
       }}
 
 
@@ -280,6 +283,14 @@ object RowLayoutTransformers {
     rewrite {
       case ir"TupledRow.fromRow(($t: TupledRow).toRow)" =>
         t
+//      case ir"TupledRow($e1: Product).toRow.append(TupledRow($e2: Product).toRow)" =>
+//        val n1 = getTupleArity(e1)
+//        val n2 = getTupleArity(e2)
+//        println(e1)
+//        println(e2)
+//        println(getTupleArity(e2))
+//        val elems = constructTuple()
+//        ir"TupledRow($e1: Product).toRow.append(TupledRow($e2: Product).toRow)"
     }
   }
 
@@ -287,7 +298,7 @@ object RowLayoutTransformers {
     rewrite {
       case ir"TupledRow($e: Product).getElem(${Const(idx)})" =>
         projectTuple(e, idx)
-      case ir"TupledRow($e).toRow" =>
+      case ir"TupledRow($e: Product).toRow" =>
         val arity = getTupleArity(e)
         val elems = (0 until arity).map(i => projectTuple(e, i))
         ir"Row(List($elems*), ${Const(arity)})"
