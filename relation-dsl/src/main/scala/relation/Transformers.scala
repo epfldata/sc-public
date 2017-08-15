@@ -1,8 +1,11 @@
 package relation
 
 import squid.ir._
+import squid.lang.{InspectableBase, ScalaCore}
 import squid.lib.{Var, transparencyPropagating, transparent}
 import squid.quasi.{embed, phase}
+import squid.anf.transfo.TupleNormalizer
+
 import scala.collection.mutable.HashMap
 
 object RelationInliner extends RelationDSL.Lowering('RelRemove)
@@ -156,10 +159,28 @@ object RowLayout extends RelationDSL.TransformerWrapper(
     RowLayoutTransformers.RowToTupledRow
     , RowLayoutTransformers.TupledRowFusion
     , RowLayoutTransformers.TupledRowLowering
-  ) with BottomUpTransformer
+  ) with TopDownTransformer
+
+
+trait TupleNNormalizer extends TupleNormalizer { self =>
+  val base: InspectableBase with ScalaCore
+  import base.Predef._
+
+  rewrite {
+    case ir"($a:$ta,$b:$tb,$c:$tc)._1" => ir"$a"
+    case ir"($a:$ta,$b:$tb,$c:$tc)._2" => ir"$b"
+    case ir"($a:$ta,$b:$tb,$c:$tc)._3" => ir"$c"
+    case ir"($a:$ta,$b:$tb,$c:$tc,$d:$td)._1" => ir"$a"
+    case ir"($a:$ta,$b:$tb,$c:$tc,$d:$td)._2" => ir"$b"
+    case ir"($a:$ta,$b:$tb,$c:$tc,$d:$td)._3" => ir"$c"
+    case ir"($a:$ta,$b:$tb,$c:$tc,$d:$td)._4" => ir"$d"
+  }
+
+}
 
 object RowLayoutTransformers {
   import RelationDSL.Predef._
+
 
   object TupleProcessing {
     def getTupleType(arity: Int): IRType[_] = {
@@ -171,7 +192,7 @@ object RowLayoutTransformers {
       }
     }
 
-    def constructTuple2[C](f: Int => IR[String, C], arity: Int): IR[_, C] = {
+    def constructTuple[C](f: Int => IR[String, C], arity: Int): IR[_, C] = {
       arity match {
         case 2 => ir"(${f(0)}, ${f(1)})"
         case 3 => ir"(${f(0)}, ${f(1)}, ${f(2)})"
@@ -180,8 +201,8 @@ object RowLayoutTransformers {
       }
     }
 
-    def constructTuple[C <: AnyRef](elems: IR[List[String], C], arity: Int): IR[_, C] = {
-      constructTuple2[C]((idx: Int) => ir"$elems(${Const(idx)})", arity)
+    def constructTupleFromList[C <: AnyRef](elems: IR[List[String], C], arity: Int): IR[_, C] = {
+      constructTuple[C]((idx: Int) => ir"$elems(${Const(idx)})", arity)
     }
 
     def getTupleArity(tup:IR[Any,_]): Int = {
@@ -231,7 +252,7 @@ object RowLayoutTransformers {
         val newList = ir"newList? : Var[List[$tupType]]"
         val body0 = body rewrite {
           case ir"$$list := ($$list.!).::(Row($elems, ${Const(s)}))" =>
-            ir"$newList := ($newList.!).::(${constructTuple(elems, s)}.asInstanceOf[$tupType])"
+            ir"$newList := ($newList.!).::(${constructTupleFromList(elems, s)}.asInstanceOf[$tupType])"
           case ir"val $listVar = $$list.!; $subBody: $tp2" =>
             val subBody2 = subBody rewrite {
               case ir"$$listVar.foreach[$t](x => $fbody)" => ir"($newList.!) foreach {e => val x = TupledRow(e.asInstanceOf[Product]).toRow; $fbody}"
@@ -277,21 +298,23 @@ object RowLayoutTransformers {
       case ir"val $hm: HashMap[String, Row] = new HashMap[String, Row]; $body: $t2" =>
         hashMapRewrite(hm, body)
     }
+
   }
 
   object TupledRowFusion extends RelationDSL.SelfTransformer with SimpleRuleBasedTransformer with BottomUpTransformer with FixPointTransformer {
     rewrite {
       case ir"TupledRow.fromRow(($t: TupledRow).toRow)" =>
         t
-//      case ir"TupledRow($e1: Product).toRow.append(TupledRow($e2: Product).toRow)" =>
-//        val n1 = getTupleArity(e1)
-//        val n2 = getTupleArity(e2)
-//        println(e1)
-//        println(e2)
-//        println(getTupleArity(e2))
-//        val elems = constructTuple()
-//        ir"TupledRow($e1: Product).toRow.append(TupledRow($e2: Product).toRow)"
+      case ir"TupledRow($e1: Product).toRow.append(TupledRow($e2: Product).toRow)" =>
+        val n1 = getTupleArity(e1)
+        val n2 = getTupleArity(e2)
+        println(e1)
+        println(e2)
+        //        println(getTupleArity(e2))
+        val elems = constructTuple((i: Int) => if (i < n1) projectTuple(e1, i) else projectTuple(e2, i - n1), n1 + n2).asInstanceOf[IR[Product, e1.Ctx]]
+        ir"TupledRow($elems).toRow"
     }
+
   }
 
   object TupledRowLowering extends RelationDSL.SelfTransformer with SimpleRuleBasedTransformer with BottomUpTransformer with FixPointTransformer {
