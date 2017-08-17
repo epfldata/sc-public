@@ -38,12 +38,13 @@ object Examples extends App {
   """
 
 
-  def pgrm = pgrmB
+  def pgrm = pgrmC
   
   println(pgrm
     transformWith RelationLowering
     transformWith SchemaSpecialization
     transformWith ListFusion
     transformWith RowLayout
+    transformWith ListToArrayBuffer
   )
 }

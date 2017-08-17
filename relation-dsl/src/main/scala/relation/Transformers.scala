@@ -6,7 +6,7 @@ import squid.lib.{Var, transparencyPropagating, transparent}
 import squid.quasi.{embed, phase}
 import squid.anf.transfo.TupleNormalizer
 
-import scala.collection.mutable.HashMap
+import scala.collection.mutable.{HashMap, ArrayBuffer}
 
 object RelationInliner extends RelationDSL.Lowering('RelRemove)
 
@@ -161,7 +161,7 @@ object RowLayout extends RelationDSL.TransformerWrapper(
     , RowLayoutTransformers.TupledRowLowering
   ) with TopDownTransformer
 
-
+// TODO move it to the core optimizations.
 trait TupleNNormalizer extends TupleNormalizer { self =>
   val base: InspectableBase with ScalaCore
   import base.Predef._
@@ -264,6 +264,11 @@ object RowLayoutTransformers {
         ir"val newList: Var[List[$tupType]] = Var(Nil); $body1"
       }}
 
+    // TODO maybe move it to the core compilation facilities.
+    implicit class IRCastingOps[T: IRType, C](e: IR[T, C]) {
+      def __inlinedCast[T2: IRType]: IR[T2, C] = e.asInstanceOf[IR[T2, C]]
+    }
+
     def hashMapRewrite[T:IRType,C](hm: IR[HashMap[String, Row],C{val hm: HashMap[String, Row]}], body: IR[T,C{val hm: HashMap[String, Row]}]): IR[T,C] = {
       var size: Int = -1
       body analyse {
@@ -271,10 +276,7 @@ object RowLayoutTransformers {
           size = getTupleArity(tup)
       }
       if (size == -1) {
-        System.err.println(s"size inferred as -1 in $body")
         throw RewriteAbort()
-      } else {
-//        System.out.println(s"size inferred as $size in $body")
       }
       getTupleType(size) match { case tupTypeVal: IRType[tupType] =>
         val newHm = ir"newHm? : HashMap[String, tupType]"
@@ -282,10 +284,9 @@ object RowLayoutTransformers {
           case ir"$$hm += (($key: String, TupledRow($tup: scala.Product).toRow)); ()" =>
             ir"$newHm += (($key, ($tup.asInstanceOf[tupType]))); ()"
           case ir"$$hm.contains($key)" => ir"$newHm.contains($key)"
-          case ir"$$hm.apply($key: String)" => ir"TupledRow(${ir"$newHm.apply($key)".asInstanceOf[IR[Product, key.Ctx]]}).toRow"
+          case ir"$$hm.apply($key: String)" => ir"TupledRow(${ir"$newHm.apply($key)".__inlinedCast[Product]}).toRow"
         }
         val body1 = body0 subs 'hm -> {throw RewriteAbort()}
-        System.out.println(s"size inferred as $size in $body1")
         ir"val newHm: HashMap[String, tupType] = new HashMap[String, tupType]; $body1"
       }}
 
@@ -308,9 +309,6 @@ object RowLayoutTransformers {
       case ir"TupledRow($e1: Product).toRow.append(TupledRow($e2: Product).toRow)" =>
         val n1 = getTupleArity(e1)
         val n2 = getTupleArity(e2)
-        println(e1)
-        println(e2)
-        //        println(getTupleArity(e2))
         val elems = constructTuple((i: Int) => if (i < n1) projectTuple(e1, i) else projectTuple(e2, i - n1), n1 + n2).asInstanceOf[IR[Product, e1.Ctx]]
         ir"TupledRow($elems).toRow"
     }
@@ -327,5 +325,33 @@ object RowLayoutTransformers {
         ir"Row(List($elems*), ${Const(arity)})"
     }
   }
+}
+
+
+object ListToArrayBuffer extends RelationDSL.SelfTransformer with SimpleRuleBasedTransformer with BottomUpTransformer with FixPointTransformer {
+  import RelationDSL.Predef._
+
+  def listRewrite[T:IRType, R:IRType,C](list: IR[Var[List[R]],C{val list: Var[List[R]]}], body: IR[T,C{val list: Var[List[R]]}]): IR[T,C] = {
+    val ab = ir"ab? : ArrayBuffer[R]"
+    val body0 = body rewrite {
+      case ir"$$list := ($$list.!).::($e: R)" =>
+        ir"$ab += $e; ()"
+      case ir"val $listVar = $$list.!; $subBody: $tp2" =>
+        val subBody2 = subBody rewrite {
+          case ir"$$listVar.foreach[$t](x => $fbody)" => ir"for(i <- 0 until $ab.length) { val x = $ab(i); $fbody}"
+        }
+        subBody2 subs 'listVar -> {System.err.println(s"inside list var access $subBody"); throw RewriteAbort()}
+      //          case ir"$$list.!.foreach[$t]($f)" =>  ir"($newList.!) foreach $f"
+    }
+    val body1 = body0 subs 'list -> {System.err.println(s"list body $body0"); throw RewriteAbort()}
+    ir"val ab = new ArrayBuffer[R](); $body1"
+  }
+
+
+  rewrite {
+    case ir"val $list: Var[List[$t1]] = Var(Nil); $body: $t2" =>
+      listRewrite(list, body)
+  }
+
 }
 
