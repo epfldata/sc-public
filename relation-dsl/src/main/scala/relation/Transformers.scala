@@ -178,65 +178,80 @@ trait TupleNNormalizer extends TupleNormalizer { self =>
 
 }
 
-object RowLayoutTransformers {
+object TupleProcessing {
   import RelationDSL.Predef._
-
-
-  object TupleProcessing {
-    def getTupleType(arity: Int): IRType[_] = {
-      arity match {
-        case 2 => irTypeOf[(String, String)]
-        case 3 => irTypeOf[(String, String, String)]
-        case 4 => irTypeOf[(String, String, String, String)]
-        case _ => throw new Exception(s"Does not support getting the type a tuple of $arity elements.")
-      }
-    }
-
-    def constructTuple[C](f: Int => IR[String, C], arity: Int): IR[_, C] = {
-      arity match {
-        case 2 => ir"(${f(0)}, ${f(1)})"
-        case 3 => ir"(${f(0)}, ${f(1)}, ${f(2)})"
-        case 4 => ir"(${f(0)}, ${f(1)}, ${f(2)}, ${f(3)})"
-        case _ => throw new Exception(s"Does not support the construction of a tuple of $arity elements.")
-      }
-    }
-
-    def constructTupleFromList[C <: AnyRef](elems: IR[List[String], C], arity: Int): IR[_, C] = {
-      constructTuple[C]((idx: Int) => ir"$elems(${Const(idx)})", arity)
-    }
-
-    def getTupleArity(tup:IR[Any,_]): Int = {
-      tup match {
-        case ir"$tup: ($ta,$tb)" => 2
-        case ir"$tup: ($ta,$tb,$tc)" => 3
-        case ir"$tup: ($ta,$tb,$tc,$td)" => 4
-        case _ => throw new Exception(s"Does not support getting the arity of the tuple `$tup`, ${tup.typ}.")
-      }
-    }
-
-    def projectTuple[C](tup:IR[Product,C], idx:Int) = {
-      val res = tup match {
-        case ir"$tup: ($ta,$tb)" => idx match {
-          case 0 => ir"$tup._1"
-          case 1 => ir"$tup._2"
-        }
-        case ir"$tup: ($ta,$tb,$tc)" => idx match {
-          case 0 => ir"$tup._1"
-          case 1 => ir"$tup._2"
-          case 2 => ir"$tup._3"
-        }
-        case ir"$tup: ($ta,$tb,$tc, $td)" => idx match {
-          case 0 => ir"$tup._1"
-          case 1 => ir"$tup._2"
-          case 2 => ir"$tup._3"
-          case 3 => ir"$tup._4"
-        }
-        case ir"$tup: Product" => throw new Exception(s"Does not support the projection of the ${idx}th element of the tuple `$tup`.")
-      }
-      ir"$res.asInstanceOf[String]"
+  def getTupleType(arity: Int): IRType[_] = {
+    arity match {
+      case 2 => irTypeOf[(String, String)]
+      case 3 => irTypeOf[(String, String, String)]
+      case 4 => irTypeOf[(String, String, String, String)]
+      case _ => throw new Exception(s"Does not support getting the type a tuple of $arity elements.")
     }
   }
 
+  def constructTuple[C](f: Int => IR[String, C], arity: Int): IR[_, C] = {
+    arity match {
+      case 2 => ir"(${f(0)}, ${f(1)})"
+      case 3 => ir"(${f(0)}, ${f(1)}, ${f(2)})"
+      case 4 => ir"(${f(0)}, ${f(1)}, ${f(2)}, ${f(3)})"
+      case _ => throw new Exception(s"Does not support the construction of a tuple of $arity elements.")
+    }
+  }
+
+  def constructTupleFromList[C <: AnyRef](elems: IR[List[String], C], arity: Int): IR[_, C] = {
+    constructTuple[C]((idx: Int) => ir"$elems(${Const(idx)})", arity)
+  }
+
+  def getTupleArity(tup:IR[Any,_]): Int = {
+    tup match {
+      case ir"$tup: ($ta,$tb)" => 2
+      case ir"$tup: ($ta,$tb,$tc)" => 3
+      case ir"$tup: ($ta,$tb,$tc,$td)" => 4
+      case _ => throw new Exception(s"Does not support getting the arity of the tuple `$tup`, ${tup.typ}.")
+    }
+  }
+
+  def getTupleArity[T: IRType]: Int = {
+    irTypeOf[T] match {
+      case x if x == getTupleType(2) => 2
+      case x if x == getTupleType(3) => 3
+      case x if x == getTupleType(4) => 4
+      case x => throw new Exception(s"Does not support getting the arity of the tuple type `$x`.")
+    }
+  }
+
+  def isTupleType[T: IRType]: Boolean =
+    try {
+      getTupleArity[T] > 1
+    } catch {
+      case x: Exception => false
+    }
+
+  def projectTuple[C, R](tup:IR[R,C], idx:Int) = {
+    val res = tup match {
+      case ir"$tup: ($ta,$tb)" => idx match {
+        case 0 => ir"$tup._1"
+        case 1 => ir"$tup._2"
+      }
+      case ir"$tup: ($ta,$tb,$tc)" => idx match {
+        case 0 => ir"$tup._1"
+        case 1 => ir"$tup._2"
+        case 2 => ir"$tup._3"
+      }
+      case ir"$tup: ($ta,$tb,$tc, $td)" => idx match {
+        case 0 => ir"$tup._1"
+        case 1 => ir"$tup._2"
+        case 2 => ir"$tup._3"
+        case 3 => ir"$tup._4"
+      }
+      case ir"$tup: Product" => throw new Exception(s"Does not support the projection of the ${idx}th element of the tuple `$tup`.")
+    }
+    ir"$res.asInstanceOf[String]"
+  }
+}
+
+object RowLayoutTransformers {
+  import RelationDSL.Predef._
   import TupleProcessing._
 
   object RowToTupledRow extends RelationDSL.SelfTransformer with SimpleRuleBasedTransformer with BottomUpTransformer with FixPointTransformer {
@@ -346,12 +361,32 @@ object ListToArrayBuffer extends RelationDSL.SelfTransformer with SimpleRuleBase
     val body1 = body0 subs 'list -> {System.err.println(s"list body $body0"); throw RewriteAbort()}
     ir"val ab = new ArrayBuffer[R](); $body1"
   }
-
-
   rewrite {
     case ir"val $list: Var[List[$t1]] = Var(Nil); $body: $t2" =>
       listRewrite(list, body)
   }
-
 }
 
+object ArrayBufferColumnar extends RelationDSL.SelfTransformer with SimpleRuleBasedTransformer with BottomUpTransformer with FixPointTransformer {
+  import RelationDSL.Predef._
+  import TupleProcessing._
+
+  def arrayBufferRewrite[T:IRType, R:IRType,C](ab: IR[ArrayBuffer[R],C {val ab: ArrayBuffer[R]}], body: IR[T,C{val ab: ArrayBuffer[R]}]): IR[T,C] = {
+    val abt = ir"abt? : (ArrayBuffer[String], ArrayBuffer[String])"
+    val n = println(getTupleArity[R])
+    val body0 = body rewrite {
+      case ir"$$ab.length" =>
+        ir"$abt._1.length"
+      case ir"$$ab += ($e: R); ()" =>
+        ir"$abt._1 += ${projectTuple(e, 0)}; $abt._2 += ${projectTuple(e, 1)}; ()"
+      case ir"$$ab($i)" =>
+        ir"($abt._1($i), $abt._2($i))".asInstanceOf[IR[R, C]]
+    }
+    val body1 = body0 subs 'ab -> {System.err.println(s"list body $body0"); throw RewriteAbort()}
+    ir"val abt = (new ArrayBuffer[String](), new ArrayBuffer[String]()); $body1"
+  }
+  rewrite {
+    case ir"val $ab: ArrayBuffer[$t1] = new ArrayBuffer[t1]; $body: $t2" if isTupleType(t1) =>
+      arrayBufferRewrite(ab, body)
+  }
+}

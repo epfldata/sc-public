@@ -46,5 +46,6 @@ object Examples extends App {
     transformWith ListFusion
     transformWith RowLayout
     transformWith ListToArrayBuffer
+    transformWith ArrayBufferColumnar
   )
 }
