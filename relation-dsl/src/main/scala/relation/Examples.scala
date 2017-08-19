@@ -37,8 +37,16 @@ object Examples extends App {
     EnFr.project(Schema("digit", "number", "nombre")).print
   """
 
+  def pgrmD = ir"""
+    val schema = Schema("number", "digit", "nombre")
+    val En = Relation.scan("data/EnFr.csv", schema, "|")
+    val selEn = En.select(x => x.getField(schema, "number") == "one")
+    val projEn = selEn.project(Schema("digit", "number"))
+    projEn.print
+  """
 
-  def pgrm = pgrmC
+
+  def pgrm = pgrmD
   
   println(pgrm
     transformWith RelationLowering
