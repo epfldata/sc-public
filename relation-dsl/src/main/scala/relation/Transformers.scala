@@ -429,6 +429,54 @@ object ListToArrayBuffer extends RelationDSL.SelfTransformer with SimpleRuleBase
   }
 }
 
+
+object HashMapToArrayBuffer extends RelationDSL.SelfTransformer with SimpleRuleBasedTransformer with BottomUpTransformer with FixPointTransformer {
+  import RelationDSL.Predef._
+
+  def tableSize = ir"1 << 12"
+
+  def hashMapRewrite[T:IRType, R:IRType,C](hm: IR[HashMap[String, R],C{val hm: HashMap[String, R]}], body: IR[T,C{val hm: HashMap[String, R]}]): IR[T,C] = {
+    val table = ir"table? : Array[Int]"
+    val tableCount = ir"tableCount? : Var[Int]"
+    val abk = ir"abk? : ArrayBuffer[String]"
+    val abv = ir"abv? : ArrayBuffer[R]"
+    val body0 = body rewrite {
+      case ir"$$hm += (($key: String, $value: R)); ()" =>
+        // TODO change to open addressing
+        ir"""
+          val hashKey = $key.hashCode() % $tableSize
+          if($table(hashKey) == -1) {
+            val index = $tableCount.! // tableCount == abk.size == abv.size
+            $table(hashKey) = index
+            $abk += $key
+            $abv += $value
+            $tableCount := index + 1
+          }
+        """
+      case ir"$$hm.contains($key)" => ir"$table($key.hashCode() % $tableSize) != -1"
+      case ir"$$hm.apply($key: String)" => ir"$abv($table($key.hashCode() % $tableSize))"
+    }
+    val body1 = body0 subs 'hm -> {
+      throw RewriteAbort()
+    }
+    ir"""val table = new Array[Int]($tableSize)
+         for (i <- 0 until $tableSize) {
+            $table(i) = -1
+         }
+         val tableCount = Var(0)
+         val abk = new ArrayBuffer[String]()
+         val abv = new ArrayBuffer[R]()
+         $body1"""
+  }
+
+
+  rewrite {
+    case ir"val $hm: HashMap[String, $t1] = new HashMap[String, t1]; $body: $t2" =>
+      hashMapRewrite(hm, body)
+  }
+
+}
+
 object ArrayBufferColumnar extends RelationDSL.SelfTransformer with SimpleRuleBasedTransformer with BottomUpTransformer with FixPointTransformer {
   import RelationDSL.Predef._
   import TupleProcessing._
