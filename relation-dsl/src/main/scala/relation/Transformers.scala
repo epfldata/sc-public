@@ -477,6 +477,87 @@ object HashMapToArrayBuffer extends RelationDSL.SelfTransformer with SimpleRuleB
 
 }
 
+@embed
+class OpenHashMap[K, V] {
+  val maxSize = 1 << 12
+  var count = 0
+  val positions = new Array[Int](maxSize)
+  val keys = ArrayBuffer.fill[K](maxSize)(null.asInstanceOf[K])
+  val values = ArrayBuffer.fill[V](maxSize)(null.asInstanceOf[V])
+  @phase('OpenHashMapInline)
+  def init(): Unit = {
+    for(i <- 0 until maxSize) {
+      positions(i) = -1
+    }
+  }
+  @phase('OpenHashMapInline)
+  def hashFunction(k: K): Int =
+    k.hashCode()
+  @phase('OpenHashMapInline)
+  def findPosition(k: K): Int = {
+    var h = hashFunction(k) % maxSize
+    while(positions(h) != -1 && keys(positions(h)) != k) {
+      h = (h + 1) % maxSize
+    }
+    h
+  }
+  @phase('OpenHashMapInline)
+  def +=(pair: (K, V)): Unit = {
+    val k = pair._1
+    val v = pair._2
+    val pos = findPosition(k)
+    if(positions(pos) != -1) {
+      val index = count
+      count += 1
+      positions(pos) = index
+      keys(index) = k
+      values(index) = v
+    }
+  }
+  @phase('OpenHashMapInline)
+  def contains(k: K): Boolean = {
+    val pos = findPosition(k)
+    positions(pos) != -1
+  }
+  @phase('OpenHashMapInline)
+  def apply(k: K): V = {
+    val pos = findPosition(k)
+    values(positions(pos))
+  }
+}
+object OpenHashMap // TODO just there for making the embed to work
+
+object HashMapToOpenHashMap extends RelationDSL.SelfTransformer with SimpleRuleBasedTransformer with BottomUpTransformer with FixPointTransformer {
+  import RelationDSL.Predef._
+
+  def tableSize = ir"1 << 12"
+
+  def hashMapRewrite[T:IRType, K: IRType, R:IRType,C](hm: IR[HashMap[K, R],C{val hm: HashMap[K, R]}], body: IR[T,C{val hm: HashMap[K, R]}]): IR[T,C] = {
+    val ohm = ir"ohm? : OpenHashMap[K, R]"
+    val body0 = body rewrite {
+      case ir"$$hm += (($key: K, $value: R)); ()" =>
+        ir"$ohm += (($key, $value))"
+      case ir"$$hm.contains($key)" => ir"$ohm.contains($key)"
+      case ir"$$hm.apply($key)" => ir"$ohm.apply($key)"
+    }
+    val body1 = body0 subs 'hm -> {
+      throw RewriteAbort()
+    }
+    ir"val ohm = new OpenHashMap[K, R](); ohm.init(); $body1"
+  }
+
+
+  rewrite {
+    case ir"val $hm: HashMap[$t0, $t1] = new HashMap[t0, t1]; $body: $t2" =>
+      hashMapRewrite(hm, body)
+  }
+
+}
+
+object OpenHashMapInliner extends RelationDSL.Lowering('OpenHashMapInline)
+
+object OpenHashMapLowering extends RelationDSL.TransformerWrapper(OpenHashMapInliner) with BottomUpTransformer with FixPointTransformer
+
 object ArrayBufferColumnar extends RelationDSL.SelfTransformer with SimpleRuleBasedTransformer with BottomUpTransformer with FixPointTransformer {
   import RelationDSL.Predef._
   import TupleProcessing._

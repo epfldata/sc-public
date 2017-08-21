@@ -46,7 +46,7 @@ object Examples extends App {
   """
 
 
-  def pgrm = pgrmD
+  def pgrm = pgrmB
   
   println(pgrm
     transformWith RelationLowering
@@ -54,6 +54,9 @@ object Examples extends App {
     transformWith ListFusion
     transformWith RowLayout
     transformWith ListToArrayBuffer
-    transformWith ArrayBufferColumnar
+//    transformWith HashMapToArrayBuffer
+    transformWith HashMapToOpenHashMap
+    transformWith OpenHashMapLowering
+//    transformWith ArrayBufferColumnar
   )
 }

@@ -12,6 +12,7 @@ object RelationDSL extends SimpleANF with ClassEmbedder with SimpleEffects with 
   with CurryEncoding.ApplicationNormalizer with IdiomsNormalizer with TupleNNormalizer with ScalaCore {
   embed(Relation)
   embed(Stream)
+  embed(OpenHashMap)
 }
 
 
