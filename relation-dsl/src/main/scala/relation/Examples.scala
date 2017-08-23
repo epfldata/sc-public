@@ -54,9 +54,8 @@ object Examples extends App {
     transformWith ListFusion
     transformWith RowLayout
     transformWith ListToArrayBuffer
-//    transformWith HashMapToArrayBuffer
     transformWith HashMapToOpenHashMap
     transformWith OpenHashMapLowering
-//    transformWith ArrayBufferColumnar
+    transformWith ArrayBufferColumnar
   )
 }

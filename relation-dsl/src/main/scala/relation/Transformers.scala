@@ -540,7 +540,7 @@ object ArrayBufferColumnar extends RelationDSL.SelfTransformer with SimpleRuleBa
 
   type CA[R, C] = C {val ab: ArrayBuffer[R]}
 
-  def arrayBufferRewrite[T:IRType, R:IRType,C](ab: IR[ArrayBuffer[R],C {val ab: ArrayBuffer[R]}], body: IR[T,C{val ab: ArrayBuffer[R]}]): IR[T,C] = {
+  def arrayBufferRewrite[T:IRType, R:IRType,C](ab: IR[ArrayBuffer[R],C {val ab: ArrayBuffer[R]}], body: IR[T,C{val ab: ArrayBuffer[R]}], init: Option[IR[Int, C]]): IR[T,C] = {
     val size = getTupleArity[R]
     // FIXME
     val tpArgs = (for (i <- 0 until size) yield irTypeOf[ArrayBuffer[String]]).toList
@@ -549,21 +549,25 @@ object ArrayBufferColumnar extends RelationDSL.SelfTransformer with SimpleRuleBa
         val abt = ir"abt? : $tupType"
         val body0 = body rewrite {
           case ir"$$ab.length" =>
-//            ir"${projectTuple[Nothing, tp, ArrayBuffer[String]](abt, 0)}.length"
             ir"${abt.project[ArrayBuffer[String]](0)}.length"
           case ir"$$ab += ($e: R); ()" =>
-//            ir"${abt.project[ArrayBuffer[String]](0)} += ${projectTuple(e, 0)}; ${abt.project[ArrayBuffer[String]](1)} += ${projectTuple(e, 1)}; ()"
             (0 until size).foldRight(ir"()".asInstanceOf[IR[Unit, C]])((cur, acc) => ir"${abt.project[ArrayBuffer[String]](cur)} += ${projectTuple(e, cur)}; $acc".asInstanceOf[IR[Unit, C]])
+          case ir"$$ab($i) = ($e: R)" =>
+            (0 until size).foldRight(ir"()".asInstanceOf[IR[Unit, C]])((cur, acc) => ir"${abt.project[ArrayBuffer[String]](cur)}($i) = ${projectTuple(e, cur)}; $acc".asInstanceOf[IR[Unit, C]])
           case ir"$$ab($i)" =>
-//            ir"(${abt.project[ArrayBuffer[String]](0)}($i), ${abt.project[ArrayBuffer[String]](1)}($i))".asInstanceOf[IR[R, C]]
             constructTuple(idx => ir"${abt.project[ArrayBuffer[String]](idx)}($i)", size).asInstanceOf[IR[R, C]]
         }
         val body1 = body0 subs 'ab -> {System.err.println(s"list body $body0"); throw RewriteAbort()}
-        ir"val abt = ${constructTuple(idx => ir"new ArrayBuffer[String]()", size).asInstanceOf[IR[tp, C]]}; $body1"
+        ir"val abt = ${constructTuple(idx => {init match {
+          case None => ir"new ArrayBuffer[String]()"
+          case Some(s) => ir"""ArrayBuffer.fill[String]($s)("")"""
+        }}, size).asInstanceOf[IR[tp, C]]}; $body1"
     }
   }
   rewrite {
     case ir"val $ab: ArrayBuffer[$t1] = new ArrayBuffer[t1]; $body: $t2" if isTupleType(t1) =>
-      arrayBufferRewrite(ab, body)
+      arrayBufferRewrite(ab, body, None)
+    case ir"val $ab: ArrayBuffer[$t1] = ArrayBuffer.fill[t1]($size)($v); $body: $t2" if isTupleType(t1) =>
+      arrayBufferRewrite(ab, body, Some(size))
   }
 }
