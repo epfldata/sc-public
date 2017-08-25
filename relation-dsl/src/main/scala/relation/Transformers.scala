@@ -2,7 +2,7 @@ package relation
 
 import squid.ir._
 import squid.lang.{InspectableBase, ScalaCore}
-import squid.lib.{Var, transparencyPropagating, transparent}
+import squid.lib.{Var, transparencyPropagating}
 import squid.quasi.{embed, phase}
 import squid.anf.transfo.TupleNormalizer
 
@@ -190,9 +190,11 @@ object TupleProcessing {
     val Tup3Sym = typeOf[(Any, Any, Any)].typeSymbol.asType
     val Tup4Sym = typeOf[(Any, Any, Any, Any)].typeSymbol.asType
 
+    val tupleSyms = List(Tup2Sym, Tup3Sym, Tup4Sym)
+
     val scalaPackage = Tup2Sym.owner.asType.toType
 
-    def apply(params: Type*) = internal.typeRef(scalaPackage, symbol(params.size), params.toList)
+    def apply(params: ScalaType*) = internal.typeRef(scalaPackage, symbol(params.size), params.toList)
 
     def symbol(arity: Int) = (arity match {
       case 2 => Tup2Sym
@@ -201,10 +203,9 @@ object TupleProcessing {
       case _ => throw new UnsupportedOperationException(s"Tuple type of arity $arity not between 2 and 4")
     }).asType
 
-    def tupleExtract(tpe: ScalaType): Option[(Int, List[ScalaType])] = {
+    def unapply(tpe: ScalaType): Option[(Int, List[ScalaType])] = {
       tpe match {
-          // FIXME use TupNSym instead of string comparison
-        case TypeRef(pre, sym, args) if pre == scalaPackage && sym.name.decodedName.toString().startsWith("Tuple") =>
+        case TypeRef(pre, sym, args) if pre == scalaPackage && tupleSyms.contains(sym) =>
           Some(args.length -> args)
         case _ => None
       }
@@ -212,6 +213,7 @@ object TupleProcessing {
   }
   def scalaTypeToIRType(tpe: ScalaType): IRType[_] =
     RelationDSL.IRType(new RelationDSL.TypeRep(tpe))
+
   def getTupleType(arity: Int): IRType[_] = {
     arity match {
       case 2 => irTypeOf[(String, String)]
@@ -222,31 +224,15 @@ object TupleProcessing {
   }
 
   def getTupleTypeArgs(tp: IRType[_]): List[IRType[_]] =
-    TupleType.tupleExtract(tp.rep.tpe) match {
-      case Some((_, list)) => list.map(scalaTypeToIRType)
+    tp.rep.tpe match {
+      case TupleType(_, list) => list.map(scalaTypeToIRType)
       case _ => throw new Exception(s"Couldn't retrieve tuple type args for type $tp")
     }
 
   def constructTupleType(types: List[IRType[_]]): IRType[_] = {
-//    println(tupleExtract(types(0).rep.tpe))
-//    println(getTupleTypeArgs(types(0)))
-//    // FIXME
-//    println(types(0).rep.tpe match {
-//      case RelationDSL.RecordType(_) => "foo"
-//      case ru.RefinedType(tp, _) => tp.toString
-//      case ru.TypeRef(pre, sym, args) => s"$pre, $sym, $args"
-//      case x => x.getClass().toString()
-//    })
-//    types.length match {
-//      case 2 => irTypeOf[(ArrayBuffer[String], ArrayBuffer[String])]
-//      case 3 => irTypeOf[(ArrayBuffer[String], ArrayBuffer[String], ArrayBuffer[String])]
-//      case 4 => irTypeOf[(ArrayBuffer[String], ArrayBuffer[String], ArrayBuffer[String], ArrayBuffer[String])]
-//      case arity => throw new Exception(s"Does not support getting the type a tuple of $arity elements.")
-//    }
-    scalaTypeToIRType(TupleType.apply(types.map(_.rep.tpe): _*))
+    scalaTypeToIRType(TupleType(types.map(_.rep.tpe): _*))
   }
 
-  // TODO generalize to the cases where the type of the elements are different.
   def constructTuple[R: IRType, C](f: Int => IR[R, C], arity: Int): IR[_, C] = {
     arity match {
       case 2 => ir"(${f(0)}, ${f(1)})"
@@ -285,7 +271,7 @@ object TupleProcessing {
       case x: Exception => false
     }
 
-  def projectTuple[C, T, R](tup:IR[T,C], idx:Int) = {
+  def projectTuple[C, T, R](tup:IR[T,C], idx:Int): IR[R, C] = {
     val res = tup match {
       case ir"$tup: ($ta,$tb)" => idx match {
         case 0 => ir"$tup._1"
@@ -334,8 +320,7 @@ object RowLayoutTransformers {
             val subBody2 = subBody rewrite {
               case ir"$$listVar.foreach[$t](x => $fbody)" => ir"($newList.!) foreach {e => val x = TupledRow(e.asInstanceOf[Product]).toRow; $fbody}"
             }
-            subBody2 subs 'listVar -> {System.err.println(s"inside list var access $subBody"); throw RewriteAbort()}
-//          case ir"$$list.!.foreach[$t]($f)" =>  ir"($newList.!) foreach $f"
+            subBody2 subs 'listVar -> { throw RewriteAbort()}
         }
         val body1 = body0 subs 'list -> {System.err.println(s"list body $tupType::$body0"); throw RewriteAbort()}
         ir"val newList: Var[List[$tupType]] = Var(Nil); $body1"
@@ -418,7 +403,6 @@ object ListToArrayBuffer extends RelationDSL.SelfTransformer with SimpleRuleBase
           case ir"$$listVar.foreach[$t](x => $fbody)" => ir"for(i <- 0 until $ab.length) { val x = $ab(i); $fbody}"
         }
         subBody2 subs 'listVar -> {System.err.println(s"inside list var access $subBody"); throw RewriteAbort()}
-      //          case ir"$$list.!.foreach[$t]($f)" =>  ir"($newList.!) foreach $f"
     }
     val body1 = body0 subs 'list -> {System.err.println(s"list body $body0"); throw RewriteAbort()}
     ir"val ab = new ArrayBuffer[R](); $body1"
@@ -542,7 +526,6 @@ object ArrayBufferColumnar extends RelationDSL.SelfTransformer with SimpleRuleBa
 
   def arrayBufferRewrite[T:IRType, R:IRType,C](ab: IR[ArrayBuffer[R],C {val ab: ArrayBuffer[R]}], body: IR[T,C{val ab: ArrayBuffer[R]}], init: Option[IR[Int, C]]): IR[T,C] = {
     val size = getTupleArity[R]
-    // FIXME
     val tpArgs = (for (i <- 0 until size) yield irTypeOf[ArrayBuffer[String]]).toList
     constructTupleType(tpArgs) match {
       case tupType: IRType[tp] =>
