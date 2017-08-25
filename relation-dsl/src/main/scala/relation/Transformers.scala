@@ -384,7 +384,7 @@ object RowLayoutTransformers {
       case ir"TupledRow($e: Product).toRow" =>
         val arity = getTupleArity(e)
         val elems = (0 until arity).map(i => projectTuple(e, i))
-        ir"Row(List($elems*), ${Const(arity)})"
+        ir"Row(List[String]($elems*), ${Const(arity)})"
     }
   }
 }
